@@ -79,3 +79,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation(libs.truth)
 }
+
+// Lets Robolectric fetch its Android runtime jars from a Maven Central mirror when set.
+tasks.withType<Test>().configureEach {
+    System.getenv("ROBOLECTRIC_REPO")?.let { systemProperty("robolectric.dependency.repo.url", it) }
+}
