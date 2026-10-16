@@ -125,6 +125,13 @@ class PhoneUiTest {
         rule.onNodeWithTag("nav_watch").performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("watch_status").assertIsDisplayed()
+        // Guided wizard: two "I did it" steps lead to the pairing-code step.
+        rule.onNodeWithTag("wiz_step_1").assertIsDisplayed()
+        rule.onNodeWithTag("wiz_next_1").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("wiz_next_2").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithTag("wiz_step_3").assertIsDisplayed()
         rule.onNodeWithTag("pair_code").assertIsDisplayed()
     }
 }

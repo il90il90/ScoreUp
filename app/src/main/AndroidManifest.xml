@@ -7,6 +7,8 @@
     <!-- mDNS discovery of the watch's Wireless-debugging services. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- In-app updates of the phone app (which carries the newest watch app). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".ScoreUpApp"

@@ -11,6 +11,9 @@ on:
 permissions:
   contents: write
 
+env:
+  RELEASES_TOKEN: ${{ secrets.SCOREUP_RELEASES_TOKEN }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -56,3 +59,12 @@ jobs:
           cp wear/build/outputs/apk/release/wear-release.apk "ScoreUp-watch-${v}.apk"
           sha256sum ScoreUp-*.apk > SHA256SUMS.txt
           gh release create "v${v}" ScoreUp-*.apk SHA256SUMS.txt --title "ScoreUp ${v}" --notes "$(git log -1 --pretty=%B)"
+      - name: Publish to public downloads repo
+        if: steps.skip.outputs.skip != 'true' && env.RELEASES_TOKEN != ''
+        env: { RELEASES_TOKEN: "${{ secrets.SCOREUP_RELEASES_TOKEN }}" }
+        run: |
+          v="${{ steps.v.outputs.name }}"; code=$((1000 + $(git rev-list --count HEAD)))
+          git clone -q "https://x-access-token:${RELEASES_TOKEN}@github.com/il90il90/scoreup-releases.git" "$RUNNER_TEMP/rel"
+          git -C "$RUNNER_TEMP/rel" config user.name scoreup-ci; git -C "$RUNNER_TEMP/rel" config user.email ci@scoreup.invalid
+          scripts/publish-release.sh "$RUNNER_TEMP/rel" "ScoreUp-phone-${v}.apk" "ScoreUp-watch-${v}.apk" "$v" "$code" "$(git log -1 --pretty=%B)"
+          git -C "$RUNNER_TEMP/rel" push -q origin HEAD:main

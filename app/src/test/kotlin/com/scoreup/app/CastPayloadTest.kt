@@ -29,3 +29,14 @@ class CastPayloadTest {
         assertThat(clock.getLong("displayMs")).isEqualTo(10 * 60_000L - 30_000L)
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class UpdateManifestTest {
+    @Test fun parsesReleaseManifest() {
+        val r = com.scoreup.app.update.AppUpdater.parse("""{"versionCode":1042,"versionName":"1.0.42","phoneApkUrl":"https://x/y.apk"}""")!!
+        assertThat(r.versionCode).isEqualTo(1042)
+        assertThat(r.apkUrl).isEqualTo("https://x/y.apk")
+        assertThat(com.scoreup.app.update.AppUpdater.parse("nope")).isNull()
+    }
+}

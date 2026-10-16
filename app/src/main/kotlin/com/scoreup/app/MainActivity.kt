@@ -39,6 +39,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.scoreup.app.cast.CastSender
 import com.scoreup.app.install.WatchInstaller
+import com.scoreup.app.update.AppUpdater
 import com.scoreup.app.ui.history.HistoryScreen
 import com.scoreup.app.ui.scoreboard.Nav
 import com.scoreup.app.ui.scoreboard.ScoreController
@@ -64,6 +65,8 @@ class MainActivity : FragmentActivity() {
     private lateinit var presentation: PresentationController
     private lateinit var castSender: CastSender
     private lateinit var installer: WatchInstaller
+    private lateinit var updater: AppUpdater
+    private val availableUpdate = kotlinx.coroutines.flow.MutableStateFlow<AppUpdater.Release?>(null)
     private var appliedLanguage: String = ""
 
     override fun attachBaseContext(newBase: Context) {
@@ -80,6 +83,8 @@ class MainActivity : FragmentActivity() {
         presentation = PresentationController(this, engine.state)
         castSender = CastSender(applicationContext)
         installer = WatchInstaller(applicationContext)
+        updater = AppUpdater(applicationContext)
+        lifecycleScope.launch { availableUpdate.value = updater.check() }
 
         lifecycleScope.launch {
             engine.state.collect { s ->
@@ -115,6 +120,8 @@ class MainActivity : FragmentActivity() {
         val castTo by castSender.connectedTo.collectAsState()
         val installerState by installer.state.collectAsState()
         var screen by rememberSaveable { mutableStateOf(Screen.BOARD) }
+        val update by availableUpdate.collectAsState()
+        val watchUpdate = peers.any { (it.appVersionCode ?: 0) in 1 until installerState.bundledVersionCode }
 
         BackHandler(enabled = screen != Screen.BOARD) { screen = if (screen == Screen.TV_MODE) Screen.TV else Screen.BOARD }
         LaunchedEffect(screen) { setTvMode(screen == Screen.TV_MODE) }
@@ -125,6 +132,7 @@ class MainActivity : FragmentActivity() {
                     state, controller,
                     WatchStatus(peers.isNotEmpty(), peers.firstOrNull()?.name),
                     tvActive = presentationDisplay != null || castTo != null,
+                    watchUpdateAvailable = watchUpdate,
                 ) { nav ->
                     screen = when (nav) {
                         Nav.SETUP -> Screen.SETUP; Nav.HISTORY -> Screen.HISTORY; Nav.WATCH -> Screen.WATCH
@@ -156,6 +164,15 @@ class MainActivity : FragmentActivity() {
             }
         }
 
+        update?.let { r ->
+            AlertDialog(
+                onDismissRequest = { availableUpdate.value = null },
+                title = { Text(stringResource(R.string.update_available_title)) },
+                text = { Text(stringResource(R.string.update_available_body, r.versionName)) },
+                confirmButton = { TextButton(onClick = { updater.downloadAndInstall(r); availableUpdate.value = null }) { Text(stringResource(R.string.update_now)) } },
+                dismissButton = { TextButton(onClick = { availableUpdate.value = null }) { Text(stringResource(R.string.later)) } },
+            )
+        }
         if (!settings.onboarded) WelcomeDialog(onWatch = { app.settings.update { it.copy(onboarded = true) }; screen = Screen.WATCH }) {
             app.settings.update { it.copy(onboarded = true) }
         }

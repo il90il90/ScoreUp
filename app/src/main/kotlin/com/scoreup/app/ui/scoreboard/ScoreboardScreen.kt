@@ -100,6 +100,7 @@ fun ScoreboardScreen(
     controller: ScoreController,
     watch: WatchStatus,
     tvActive: Boolean,
+    watchUpdateAvailable: Boolean = false,
     onNavigate: (Nav) -> Unit,
 ) {
     // A ticking clock only while the game clock runs (no wasted recompositions otherwise).
@@ -123,6 +124,18 @@ fun ScoreboardScreen(
         val wide = maxWidth >= 840.dp
         Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
             TopBar(state, now, watch, tvActive, controller, onNavigate)
+            if (watchUpdateAvailable) {
+                Surface(
+                    onClick = { onNavigate(Nav.WATCH) }, shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("watch_update_banner"),
+                ) {
+                    Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Watch, null, tint = MaterialTheme.colorScheme.onPrimary)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.installer_update_available), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
             Spacer(Modifier.height(8.dp))
             if (landscape) {
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
