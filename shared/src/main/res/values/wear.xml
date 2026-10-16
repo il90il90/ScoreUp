@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Both the phone and the watch app advertise this capability so each can find the other. -->
+    <string-array name="android_wear_capabilities" translatable="false">
+        <item>scoreup_sync</item>
+    </string-array>
+</resources>
