@@ -92,14 +92,18 @@ fun WatchScreen(
     DisposableEffect(Unit) { onStartDiscovery(); onDispose { onStopDiscovery() } }
 
     var step by rememberSaveable { mutableStateOf(if (installer.paired) 0 else 1) } // 0 = quick (already paired)
-    var host by rememberSaveable { mutableStateOf(lastHost) }
+    // Pairing and install addresses are tracked separately: other devices on the Wi-Fi may also
+    // advertise Wireless debugging, and the install must go to the SAME watch that was paired.
+    var pairHost by rememberSaveable { mutableStateOf(lastHost) }
     var pairPort by rememberSaveable { mutableStateOf("") }
+    var host by rememberSaveable { mutableStateOf(lastHost) }
     var connectPort by rememberSaveable { mutableStateOf("") }
     var manual by rememberSaveable { mutableStateOf(false) }
     var autoInstallArmed by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(installer.pairingService) { installer.pairingService?.let { host = it.host; pairPort = it.port.toString() } }
-    LaunchedEffect(installer.connectService) { installer.connectService?.let { host = it.host; connectPort = it.port.toString() } }
+    LaunchedEffect(installer.pairingService) { installer.pairingService?.let { pairHost = it.host; pairPort = it.port.toString() } }
+    val watchConnect = installer.connectServiceFor(if (step == 3 || step == 4) pairHost.ifBlank { null } else null)
+    LaunchedEffect(watchConnect) { watchConnect?.let { host = it.host; connectPort = it.port.toString() } }
 
     // Pairing succeeded → jump to install and start it automatically as soon as the watch is reachable.
     LaunchedEffect(installer.paired, step) { if (installer.paired && step == 3) { step = 4; autoInstallArmed = true } }
@@ -139,19 +143,22 @@ fun WatchScreen(
                     3 -> StepCard(3, stringResource(R.string.wiz_s3_title), stringResource(R.string.wiz_s3_body), "🔗") {
                         Discovery(installer.pairingService?.toString(), installer.discovering)
                         if (manual || (installer.pairingService == null && pairPort.isEmpty())) {
-                            AddressFields(host, { host = it }, pairPort, { pairPort = it }, stringResource(R.string.pair_port))
+                            AddressFields(pairHost, { pairHost = it }, pairPort, { pairPort = it }, stringResource(R.string.pair_port))
                         }
                         CodeBoxes(enabled = !installer.busy) { code ->
                             val p = pairPort.toIntOrNull()
-                            if (p != null && host.isNotBlank()) onPair(host, p, code)
+                            if (p != null && pairHost.isNotBlank()) { host = pairHost; onPair(pairHost, p, code) }
                         }
                         if (installer.phase == InstallPhase.PAIRING) Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.connecting))
                         }
                     }
                     else -> StepCard(4, stringResource(R.string.wiz_s4_title), stringResource(R.string.wiz_s4_body), "⌚") {
-                        Discovery(installer.connectService?.toString(), installer.discovering)
-                        if (manual || (installer.connectService == null && connectPort.isEmpty())) {
+                        Discovery(watchConnect?.toString(), installer.discovering)
+                        if (watchConnect == null && installer.connectServices.size > 1) {
+                            DevicePicker(installer.connectServices) { host = it.host; connectPort = it.port.toString() }
+                        }
+                        if (manual || (watchConnect == null && connectPort.isEmpty())) {
                             AddressFields(host, { host = it }, connectPort, { connectPort = it }, stringResource(R.string.connect_port))
                         }
                         if (installer.phase == InstallPhase.SUCCESS) {
@@ -210,7 +217,7 @@ private fun QuickCard(s: InstallerState, isUpdate: Boolean, canInstall: Boolean,
             Icon(Icons.Rounded.Watch, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
             Text(stringResource(R.string.wiz_ready_title), style = MaterialTheme.typography.headlineMedium)
             Text(stringResource(R.string.wiz_ready_body), color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-            Discovery(s.connectService?.toString(), s.discovering)
+            Discovery(s.connectServiceFor(null)?.toString(), s.discovering)
             BigButton(stringResource(if (isUpdate) R.string.wiz_quick_update else R.string.wiz_quick_install), "install_button", enabled = canInstall, onClick = onInstall)
             TextButton(onClick = onGuided) { Text(stringResource(R.string.wiz_start_guided)) }
         }
@@ -280,6 +287,15 @@ private fun Discovery(found: String?, discovering: Boolean) {
         if (found == null && discovering) { CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)) }
         if (found != null) { Icon(Icons.Rounded.CheckCircle, null, tint = Color(0xFF00E58F), modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)) }
         Text(if (found != null) stringResource(R.string.wiz_found, found) else stringResource(R.string.wiz_looking), style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** Several devices advertise Wireless debugging and none matches the paired watch: let the user pick. */
+@Composable
+private fun DevicePicker(options: List<com.scoreup.app.install.Endpoint>, onPick: (com.scoreup.app.install.Endpoint) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("device_picker")) {
+        Text(stringResource(R.string.pick_watch), style = MaterialTheme.typography.bodyMedium)
+        options.forEach { e -> OutlinedButton(onClick = { onPick(e) }, modifier = Modifier.fillMaxWidth()) { Text(e.toString()) } }
     }
 }
 

@@ -35,7 +35,10 @@ enum class InstallPhase { IDLE, PAIRING, CONNECTING, INSTALLING, LAUNCHING, SUCC
 data class InstallerState(
     val phase: InstallPhase = InstallPhase.IDLE,
     val pairingService: Endpoint? = null,
-    val connectService: Endpoint? = null,
+    /** Every device on the LAN advertising Wireless debugging (watch, but also TVs, PCs, phones). */
+    val connectServices: List<Endpoint> = emptyList(),
+    /** Address of the watch we last paired with / installed to; used to pick ITS connect service. */
+    val pairedHost: String = "",
     val paired: Boolean = false,
     val progress: Float = 0f,
     val error: String? = null,
@@ -45,6 +48,18 @@ data class InstallerState(
     val discovering: Boolean = false,
 ) {
     val busy get() = phase in setOf(InstallPhase.PAIRING, InstallPhase.CONNECTING, InstallPhase.INSTALLING, InstallPhase.LAUNCHING)
+
+    /**
+     * The connect service of the watch: same IP as the watch we pair(ed) with; only when that is
+     * unknown and exactly one device advertises, that one. Never another device's address.
+     */
+    fun connectServiceFor(host: String?): Endpoint? {
+        val h = host?.takeIf { it.isNotBlank() } ?: pairedHost.takeIf { it.isNotBlank() } ?: pairingService?.host
+        if (h != null) connectServices.firstOrNull { it.host == h }?.let { return it }
+        return if (h == null) connectServices.singleOrNull() else null
+    }
+
+    val connectService: Endpoint? get() = connectServiceFor(null)
 }
 
 enum class ErrorKind { PAIR, CONNECT, INSTALL }
@@ -58,7 +73,7 @@ class WatchInstaller(private val context: Context) {
     private val prefs = context.getSharedPreferences("scoreup_installer", Context.MODE_PRIVATE)
     private val nsd = context.getSystemService(NsdManager::class.java)
     private val lock = Mutex()
-    private val _state = MutableStateFlow(InstallerState(paired = prefs.getBoolean("paired", false)))
+    private val _state = MutableStateFlow(InstallerState(paired = prefs.getBoolean("paired", false), pairedHost = prefs.getString("host", "") ?: ""))
     val state: StateFlow<InstallerState> = _state.asStateFlow()
 
     private val key: AdbKey by lazy { AdbKey.loadOrCreate(File(context.filesDir, "adb"), "scoreup@${Build.MODEL.replace(' ', '_')}") }
@@ -104,7 +119,7 @@ class WatchInstaller(private val context: Context) {
                 override fun onServiceLost(info: NsdServiceInfo) {
                     _state.update {
                         if (info.serviceType.contains("pairing")) it.copy(pairingService = it.pairingService?.takeIf { e -> e.name != info.serviceName })
-                        else it.copy(connectService = it.connectService?.takeIf { e -> e.name != info.serviceName })
+                        else it.copy(connectServices = it.connectServices.filter { e -> e.name != info.serviceName })
                     }
                 }
             }
@@ -128,7 +143,10 @@ class WatchInstaller(private val context: Context) {
                 val host = s.host?.hostAddress
                 if (host != null && !host.contains(':')) { // prefer IPv4 (watch LAN address)
                     val ep = Endpoint(host, s.port, s.serviceName)
-                    _state.update { if (s.serviceType.contains("pairing")) it.copy(pairingService = ep) else it.copy(connectService = ep) }
+                    _state.update {
+                        if (s.serviceType.contains("pairing")) it.copy(pairingService = ep)
+                        else it.copy(connectServices = it.connectServices.filter { e -> e.name != ep.name && e.host != ep.host } + ep)
+                    }
                 }
                 resolving = false; resolveNext()
             }
@@ -143,7 +161,7 @@ class WatchInstaller(private val context: Context) {
             runCatching { PairingClient(key, tls, exporter).pair(host.trim(), port, code) }
                 .onSuccess {
                     prefs.edit().putBoolean("paired", true).putString("host", host.trim()).apply()
-                    _state.update { s -> s.copy(phase = InstallPhase.IDLE, paired = true) }
+                    _state.update { s -> s.copy(phase = InstallPhase.IDLE, paired = true, pairedHost = host.trim()) }
                 }
                 .onFailure { e -> fail(ErrorKind.PAIR, e) }
         }
@@ -164,7 +182,7 @@ class WatchInstaller(private val context: Context) {
                 runCatching { c.shell("am start -n $WATCH_ACTIVITY") }
             }
             prefs.edit().putBoolean("paired", true).putString("host", host.trim()).apply()
-            _state.update { it.copy(phase = InstallPhase.SUCCESS, paired = true) }
+            _state.update { it.copy(phase = InstallPhase.SUCCESS, paired = true, pairedHost = host.trim()) }
         }
     }
 
