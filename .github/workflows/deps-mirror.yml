@@ -6,12 +6,6 @@ name: Dependency mirror
 
 on:
   workflow_dispatch:
-  push:
-    branches-ignore: [deps-mirror]
-    paths:
-      - gradle/libs.versions.toml
-      - "**/build.gradle.kts"
-      - .github/workflows/deps-mirror.yml
 
 permissions:
   contents: write

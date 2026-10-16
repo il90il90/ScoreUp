@@ -21,6 +21,9 @@ class ScoreRuntime private constructor(context: Context, role: String, versionCo
             }
 
         fun get(): ScoreRuntime = checkNotNull(instance) { "ScoreRuntime.init not called" }
+
+        /** Tests only: drop the process singleton so each test starts from a fresh app. */
+        fun resetForTests() { instance?.sync?.stop(); instance = null }
         fun getOrNull(): ScoreRuntime? = instance
     }
 }
