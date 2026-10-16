@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.compose.animation)
     implementation(libs.play.cast.framework)
     implementation(libs.androidx.mediarouter)
+    implementation(libs.androidx.appcompat)
     implementation(project(":adb"))
     implementation(libs.conscrypt)
     debugImplementation(libs.compose.ui.tooling)

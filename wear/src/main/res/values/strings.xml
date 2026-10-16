@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">ScoreUp</string>
+    <string name="home">HOME</string>
+    <string name="away">AWAY</string>
+    <string name="undo">Undo</string>
+    <string name="start">Start clock</string>
+    <string name="pause">Pause clock</string>
+    <string name="next_period">Next period</string>
+    <string name="end_set">End set</string>
+    <string name="new_match">New match</string>
+    <string name="new_match_confirm">Start a new match?</string>
+    <string name="points_per_tap">Points per tap</string>
+    <string name="controls">Controls</string>
+    <string name="phone_connected">Phone connected · synced</string>
+    <string name="phone_offline">Offline — will sync when the phone reconnects</string>
+    <string name="final_label">FINAL</string>
+    <string name="set_short">SET %1$d</string>
+    <string name="half_short">H%1$d</string>
+</resources>

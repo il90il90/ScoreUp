@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="night">#070A14</color>
+    <color name="neon">#FFD60A</color>
+    <!-- AppCompat parent: required by the Cast MediaRouteButton dialogs. -->
+    <style name="Theme.ScoreUp" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/night</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorPrimary">@color/neon</item>
+        <item name="colorAccent">@color/neon</item>
+    </style>
+    <style name="Theme.ScoreUp.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/night</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ScoreUp</item>
+    </style>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home">בית</string>
+    <string name="away">חוץ</string>
+    <string name="undo">ביטול</string>
+    <string name="start">הפעל שעון</string>
+    <string name="pause">השהה שעון</string>
+    <string name="next_period">לשלב הבא</string>
+    <string name="end_set">סיים מערכה</string>
+    <string name="new_match">משחק חדש</string>
+    <string name="new_match_confirm">להתחיל משחק חדש?</string>
+    <string name="points_per_tap">נקודות ללחיצה</string>
+    <string name="controls">בקרה</string>
+    <string name="phone_connected">הטלפון מחובר · מסונכרן</string>
+    <string name="phone_offline">לא מחובר — יסתנכרן כשהטלפון יתחבר</string>
+    <string name="final_label">סיום</string>
+    <string name="set_short">מערכה %1$d</string>
+    <string name="half_short">מחצית %1$d</string>
+</resources>
