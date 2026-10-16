@@ -1,12 +1,15 @@
 package com.scoreup.adb
 
 import java.net.Socket
-import java.security.KeyStore
+import java.security.Principal
+import java.security.PrivateKey
 import java.security.Provider
 import java.security.cert.X509Certificate
-import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.KeyManager
 import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSocket
+import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
@@ -21,11 +24,25 @@ fun interface KeyingMaterialExporter {
  */
 class AdbTls(private val key: AdbKey, private val provider: Provider? = null) {
     private val context: SSLContext by lazy {
-        val ks = KeyStore.getInstance("PKCS12").apply { load(null, null); setKeyEntry("adb", key.privateKey, CharArray(0), arrayOf(key.certificate)) }
-        val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply { init(ks, CharArray(0)) }
         val ctx = if (provider != null) SSLContext.getInstance("TLSv1.3", provider) else SSLContext.getInstance("TLSv1.3")
-        ctx.init(kmf.keyManagers, arrayOf<TrustManager>(TrustAll), null)
+        ctx.init(arrayOf<KeyManager>(AlwaysOurKey()), arrayOf<TrustManager>(TrustAll), null)
         ctx
+    }
+
+    /**
+     * adbd's CertificateRequest lists the paired keys' fingerprints as CA names, which never match
+     * our self-signed issuer. A standard KeyManager then sends NO client certificate and adbd
+     * rejects the handshake. Always offer our certificate, exactly like the adb host does.
+     */
+    private inner class AlwaysOurKey : X509ExtendedKeyManager() {
+        override fun chooseClientAlias(keyType: Array<out String>?, issuers: Array<out Principal>?, socket: Socket?) = ALIAS
+        override fun chooseEngineClientAlias(keyType: Array<out String>?, issuers: Array<out Principal>?, engine: SSLEngine?) = ALIAS
+        override fun getClientAliases(keyType: String?, issuers: Array<out Principal>?) = arrayOf(ALIAS)
+        override fun getServerAliases(keyType: String?, issuers: Array<out Principal>?) = arrayOf(ALIAS)
+        override fun chooseServerAlias(keyType: String?, issuers: Array<out Principal>?, socket: Socket?) = ALIAS
+        override fun chooseEngineServerAlias(keyType: String?, issuers: Array<out Principal>?, engine: SSLEngine?) = ALIAS
+        override fun getCertificateChain(alias: String?): Array<X509Certificate> = arrayOf(key.certificate)
+        override fun getPrivateKey(alias: String?): PrivateKey = key.privateKey
     }
 
     fun wrap(raw: Socket, host: String, port: Int): SSLSocket {
@@ -35,6 +52,8 @@ class AdbTls(private val key: AdbKey, private val provider: Provider? = null) {
         s.startHandshake()
         return s
     }
+
+    private companion object { const val ALIAS = "adb" }
 
     @Suppress("CustomX509TrustManager")
     private object TrustAll : X509TrustManager {

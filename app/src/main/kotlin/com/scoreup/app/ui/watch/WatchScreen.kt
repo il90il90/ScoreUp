@@ -165,7 +165,7 @@ fun WatchScreen(
                 }
             }
 
-            InstallProgress(installer, onRetry = { onReset(); if (step == 4) autoInstallArmed = false })
+            InstallProgress(installer, onRetry = { onReset(); if (step == 4) autoInstallArmed = false }, onRepair = { onReset(); step = 3 })
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 if (step in 2..4) TextButton(onClick = { onReset(); step -= 1 }) { Text(stringResource(R.string.back)) } else Spacer(Modifier)
@@ -295,7 +295,7 @@ private fun AddressFields(host: String, onHost: (String) -> Unit, port: String, 
 }
 
 @Composable
-private fun InstallProgress(s: InstallerState, onRetry: () -> Unit) {
+private fun InstallProgress(s: InstallerState, onRetry: () -> Unit, onRepair: () -> Unit) {
     AnimatedVisibility(s.phase in setOf(InstallPhase.CONNECTING, InstallPhase.INSTALLING, InstallPhase.LAUNCHING, InstallPhase.SUCCESS, InstallPhase.ERROR)) {
         Surface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.testTag("install_progress")) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -315,7 +315,10 @@ private fun InstallProgress(s: InstallerState, onRetry: () -> Unit) {
                             },
                             color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center, modifier = Modifier.testTag("install_error"),
                         )
-                        OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+                            if (s.errorKind == ErrorKind.CONNECT) Button(onClick = onRepair, modifier = Modifier.testTag("pair_again")) { Text(stringResource(R.string.pair_again)) }
+                        }
                     }
                     else -> {
                         val determinate = s.phase != InstallPhase.CONNECTING

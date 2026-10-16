@@ -136,3 +136,24 @@ class PhoneUiTest {
         rule.onNodeWithTag("pair_code").assertIsDisplayed()
     }
 }
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [34], qualifiers = "en-w411dp-h891dp-port")
+class LanguageSwitchTest {
+    @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+    @After fun tearDown() {
+        (rule.activity.application as ScoreUpApp).settings.update { it.copy(language = "") }
+        ScoreRuntime.resetForTests()
+    }
+
+    @Test fun switchToHebrewFromMenu() {
+        rule.dismissWelcome()
+        rule.runOnUiThread { (rule.activity.application as ScoreUpApp).runtime.engine.newMatch(com.scoreup.core.MatchConfig.default()) }
+        rule.onNodeWithTag("menu").performClick()
+        rule.onNodeWithTag("menu_language").performClick()
+        rule.onNodeWithTag("lang_iw").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("בית").assertIsDisplayed()
+        assertThat(rule.activity.window.decorView.layoutDirection).isEqualTo(android.view.View.LAYOUT_DIRECTION_RTL)
+    }
+}

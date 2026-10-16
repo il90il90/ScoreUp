@@ -1,6 +1,8 @@
 package com.scoreup.app.ui.common
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -28,6 +30,9 @@ fun ScreenScaffold(
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        // safeDrawing includes the keyboard (IME): content shrinks above it and the focused text
+        // field is scrolled into view instead of being hidden under the keyboard.
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(title, style = MaterialTheme.typography.titleLarge) },

@@ -166,4 +166,6 @@
     <string name="update_now">Update</string>
     <string name="later">Later</string>
     <string name="up_to_date">You have the latest version</string>
+    <string name="pair_again">Pair again</string>
+    <string name="language_menu">Language · שפה</string>
 </resources>

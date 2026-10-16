@@ -42,7 +42,7 @@ class FakeAdbd(private val pairingCode: String = "482915", private val useTls: B
                 if (pairedKeys.none { it.startsWith("$pub ") }) throw java.security.cert.CertificateException("unpaired")
             }
             override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf(serverKey.certificate)
         }
         init(kmf.keyManagers, arrayOf<TrustManager>(tm), null)
     }

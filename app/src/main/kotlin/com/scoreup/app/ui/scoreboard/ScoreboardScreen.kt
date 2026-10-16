@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SportsScore
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.Watch
@@ -90,7 +91,7 @@ import com.scoreup.core.ScoringEntry
 import com.scoreup.core.Side
 import kotlinx.coroutines.delay
 
-enum class Nav { SETUP, HISTORY, WATCH, TV, SETTINGS }
+enum class Nav { SETUP, HISTORY, WATCH, TV, SETTINGS, LANGUAGE }
 
 data class WatchStatus(val connected: Boolean, val name: String?)
 
@@ -202,6 +203,7 @@ private fun TopBar(state: MatchState, now: Long, watch: WatchStatus, tvActive: B
                 MenuItem(Icons.Rounded.Tv, stringResource(R.string.cast_title), "menu_tv") { menu = false; onNavigate(Nav.TV) }
                 if (state.finished) MenuItem(Icons.Rounded.Refresh, stringResource(R.string.reopen_match), "menu_reopen") { menu = false; controller.reopen() }
                 else MenuItem(Icons.Rounded.Flag, stringResource(R.string.finish_match), "menu_finish") { menu = false; controller.finish() }
+                MenuItem(Icons.Rounded.Translate, stringResource(R.string.language_menu), "menu_language") { menu = false; onNavigate(Nav.LANGUAGE) }
                 MenuItem(Icons.Rounded.Settings, stringResource(R.string.settings), "menu_settings") { menu = false; onNavigate(Nav.SETTINGS) }
             }
         }

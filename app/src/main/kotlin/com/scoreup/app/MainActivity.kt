@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -120,6 +121,7 @@ class MainActivity : FragmentActivity() {
         val castTo by castSender.connectedTo.collectAsState()
         val installerState by installer.state.collectAsState()
         var screen by rememberSaveable { mutableStateOf(Screen.BOARD) }
+        var showLanguage by rememberSaveable { mutableStateOf(false) }
         val update by availableUpdate.collectAsState()
         val watchUpdate = peers.any { (it.appVersionCode ?: 0) in 1 until installerState.bundledVersionCode }
 
@@ -137,6 +139,7 @@ class MainActivity : FragmentActivity() {
                     screen = when (nav) {
                         Nav.SETUP -> Screen.SETUP; Nav.HISTORY -> Screen.HISTORY; Nav.WATCH -> Screen.WATCH
                         Nav.TV -> Screen.TV; Nav.SETTINGS -> Screen.SETTINGS
+                        Nav.LANGUAGE -> { showLanguage = true; Screen.BOARD }
                     }
                 }
                 Screen.SETUP -> MatchSetupScreen(
@@ -164,6 +167,7 @@ class MainActivity : FragmentActivity() {
             }
         }
 
+        if (showLanguage) com.scoreup.app.ui.common.LanguageDialog(settings.language, onPick = { tag -> app.settings.update { it.copy(language = tag) } }) { showLanguage = false }
         update?.let { r ->
             AlertDialog(
                 onDismissRequest = { availableUpdate.value = null },
@@ -183,7 +187,13 @@ class MainActivity : FragmentActivity() {
         AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text(stringResource(R.string.welcome_title)) },
-            text = { Column { Text(stringResource(R.string.welcome_body)) } },
+            text = {
+                Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.welcome_body))
+                    Text(stringResource(R.string.language_menu), style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+                    com.scoreup.app.ui.common.LanguageOptions(app.settings.state.collectAsState().value.language) { tag -> app.settings.update { it.copy(language = tag) } }
+                }
+            },
             confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.testTag("welcome_go")) { Text(stringResource(R.string.lets_go)) } },
             dismissButton = { TextButton(onClick = onWatch) { Text(stringResource(R.string.install_watch_cta)) } },
         )
