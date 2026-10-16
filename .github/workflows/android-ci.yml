@@ -26,6 +26,7 @@ jobs:
           name: test-reports
           path: "**/build/reports/tests/**"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: debug-apks
           path: |
@@ -51,7 +52,9 @@ jobs:
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          script: |
+            ./gradlew --no-daemon :app:connectedDebugAndroidTest :app:assembleRelease
+            scripts/emulator-smoke.sh app/build/outputs/apk/release/app-release.apk com.scoreup.app/.MainActivity
 
   wear-emulator-e2e:
     runs-on: ubuntu-latest
@@ -72,4 +75,6 @@ jobs:
           target: android-wear
           arch: x86_64
           disable-animations: true
-          script: ./gradlew --no-daemon :wear:connectedDebugAndroidTest
+          script: |
+            ./gradlew --no-daemon :wear:connectedDebugAndroidTest :wear:assembleRelease
+            scripts/emulator-smoke.sh wear/build/outputs/apk/release/wear-release.apk com.scoreup.app/com.scoreup.wear.MainActivity

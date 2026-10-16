@@ -43,8 +43,8 @@ class WearUiTest {
         rule.onNodeWithTag("watch_away").performClick()
         rule.onNodeWithTag("watch_away").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home").assertTextEquals("2")
-        rule.onNodeWithTag("watch_score_away").assertTextEquals("4")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("2")
+        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("4")
         assertThat(sent.filterIsInstance<SyncMessage.Events>()).hasSize(3)
         assertThat(interactions).isAtLeast(3)
     }
@@ -57,7 +57,7 @@ class WearUiTest {
         rule.onNodeWithTag("watch_tap_points").assertTextEquals("+3")
         rule.onNodeWithTag("watch_home").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home").assertTextEquals("3")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("3")
     }
 
     @Test fun longPressUndoesThatTeamAndUndoButtonWorks() {
@@ -66,11 +66,11 @@ class WearUiTest {
         rule.onNodeWithTag("watch_away").performClick()
         rule.onNodeWithTag("watch_home").performTouchInput { longClick() }
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home").assertTextEquals("0")
-        rule.onNodeWithTag("watch_score_away").assertTextEquals("2")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("0")
+        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("2")
         rule.onNodeWithTag("watch_undo").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_away").assertTextEquals("0")
+        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("0")
     }
 
     @Test fun clockToggles() {
@@ -84,7 +84,7 @@ class WearUiTest {
         launch()
         repeat(25) { rule.onNodeWithTag("watch_home").performClick() }
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home").assertTextEquals("50")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("50")
         assertThat(engine.activeLog.events).hasSize(25)
     }
 }

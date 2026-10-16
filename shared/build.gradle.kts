@@ -26,3 +26,7 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.androidx.test.core)
 }
+
+tasks.withType<Test>().configureEach {
+    System.getenv("ROBOLECTRIC_REPO")?.let { systemProperty("robolectric.dependency.repo.url", it) }
+}

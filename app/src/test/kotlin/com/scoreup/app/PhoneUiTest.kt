@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.core.app.ApplicationProvider
@@ -37,7 +38,7 @@ class PhoneUiTest {
     }
     @After fun tearDown() { ScoreRuntime.resetForTests() }
 
-    private fun score(side: String) = rule.onNodeWithTag("score_$side")
+    private fun score(side: String) = rule.onNodeWithTag("score_$side", useUnmergedTree = true)
 
     @Test fun tapAddsDefaultBasketballTwoPoints() {
         rule.onNodeWithTag("team_home").performClick()
@@ -82,14 +83,14 @@ class PhoneUiTest {
         rule.onNodeWithTag("menu").performClick()
         rule.onNodeWithTag("menu_setup").performClick()
         rule.onNodeWithTag("sport_volleyball").performClick()
-        rule.onNodeWithTag("team_name_home").performTextReplacement("Sharks")
-        rule.onNodeWithTag("start_match").performClick()
+        rule.onNodeWithTag("team_name_home").performScrollTo().performTextReplacement("Sharks")
+        rule.onNodeWithTag("start_match").performScrollTo().performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("name_home").assertTextEquals("SHARKS")
+        rule.onNodeWithTag("name_home", useUnmergedTree = true).assertTextEquals("SHARKS")
         val s = app.runtime.engine.state.value
         assertThat(s.config.rules.setBased).isTrue()
         assertThat(s.config.tapPoints).isEqualTo(1)
-        rule.onNodeWithTag("period").assertTextEquals("Set 1")
+        rule.onNodeWithTag("period", useUnmergedTree = true).assertTextEquals("Set 1")
     }
 
     @Test fun clockStartsAndPauses() {
@@ -115,10 +116,10 @@ class PhoneUiTest {
         rule.onNodeWithTag("nav_tv").performClick()
         rule.onNodeWithTag("open_tv_mode").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("tv_score_home").assertTextEquals("2")
+        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("2")
         rule.runOnUiThread { app.runtime.engine.addPoints(com.scoreup.core.Side.HOME, 3) }
         rule.waitForIdle()
-        rule.onNodeWithTag("tv_score_home").assertTextEquals("5")
+        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("5")
     }
 
     @Test fun watchInstallerScreenOpens() {

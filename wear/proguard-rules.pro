@@ -1,0 +1,2 @@
+-keep,includedescriptorclasses class com.scoreup.core.**$$serializer { *; }
+-keepclassmembers class com.scoreup.core.** { *** Companion; kotlinx.serialization.KSerializer serializer(...); }
