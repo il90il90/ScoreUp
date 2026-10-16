@@ -34,8 +34,10 @@ android {
     buildTypes {
         debug { signingConfig = signingConfigs.getByName("scoreup") }
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // -Pscoreup.minify=false builds an unshrunk release (same code paths as the tested debug build).
+            val minify = (project.findProperty("scoreup.minify") as String?)?.toBoolean() ?: true
+            isMinifyEnabled = minify
+            isShrinkResources = minify
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("scoreup")
         }
