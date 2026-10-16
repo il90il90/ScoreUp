@@ -1,0 +1,70 @@
+name: Dependency mirror
+
+# Resolves every build/test dependency (incl. Google Maven + Robolectric runtimes) and publishes
+# them as a Maven-layout mirror on the `deps-mirror` branch, so sandboxed dev machines without
+# Google Maven access can build fully offline (scripts/fetch-deps-mirror.sh).
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [deps-mirror]
+    paths:
+      - gradle/libs.versions.toml
+      - "**/build.gradle.kts"
+      - .github/workflows/deps-mirror.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deps-mirror
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - name: Accept SDK licences + install platform
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;34.0.0" > /dev/null
+      - name: Resolve + build everything
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --continue resolveAll assembleDebug assembleRelease assembleDebugAndroidTest testDebugUnitTest || echo "BUILD_FAILED=1" >> "$GITHUB_ENV"
+      - name: Build Maven-layout mirror
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/mirror/m2"
+          mkdir -p "$out"
+          src="$HOME/.gradle/caches/modules-2/files-2.1"
+          find "$src" -type f | while read -r f; do
+            rel="${f#$src/}"
+            group="$(echo "$rel" | cut -d/ -f1)"; art="$(echo "$rel" | cut -d/ -f2)"; ver="$(echo "$rel" | cut -d/ -f3)"; name="$(basename "$f")"
+            d="$out/$(echo "$group" | tr . /)/$art/$ver"
+            mkdir -p "$d"; cp "$f" "$d/$name"
+          done
+          if [ -d "$HOME/.m2/repository" ]; then cp -r "$HOME/.m2/repository/." "$out/"; fi
+          mkdir -p "$RUNNER_TEMP/mirror/sdk/platforms"
+          cp -r "$ANDROID_HOME/platforms/android-35" "$RUNNER_TEMP/mirror/sdk/platforms/"
+          du -sh "$RUNNER_TEMP/mirror"
+      - name: Publish mirror branch
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          tar -C mirror -czf mirror.tgz .
+          mkdir pub && cd pub
+          split -b 90m ../mirror.tgz mirror.tgz.part-
+          sha256sum ../mirror.tgz | cut -d' ' -f1 > mirror.sha256
+          echo "${GITHUB_SHA}" > source-commit
+          git init -q -b deps-mirror
+          git config user.name "scoreup-ci"; git config user.email "ci@scoreup.invalid"
+          git add . && git commit -qm "deps mirror for ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" deps-mirror
+      - name: Report build status
+        run: test -z "${BUILD_FAILED:-}"
