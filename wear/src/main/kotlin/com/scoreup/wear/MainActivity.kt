@@ -23,9 +23,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val state by runtime.engine.state.collectAsState()
             val peers by runtime.sync.peers.collectAsState()
+            val diag by runtime.sync.diagnostics.collectAsState()
             val phoneVersion = peers.maxOfOrNull { it.appVersionCode ?: 0 } ?: 0
             WearScoreApp(state, runtime.engine, haptics, phoneConnected = peers.isNotEmpty(), onInteraction = ::keepAwake,
-                updateAvailable = phoneVersion > BuildConfig.VERSION_CODE)
+                updateAvailable = phoneVersion > BuildConfig.VERSION_CODE, sync = diag, onSyncNow = runtime.sync::handshake)
         }
     }
 

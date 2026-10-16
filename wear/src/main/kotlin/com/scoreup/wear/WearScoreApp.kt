@@ -89,13 +89,14 @@ private val WearColors = Colors(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun WearScoreApp(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit, updateAvailable: Boolean = false) {
+fun WearScoreApp(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit, updateAvailable: Boolean = false,
+    sync: com.scoreup.shared.WearSync.Diagnostics = com.scoreup.shared.WearSync.Diagnostics(), onSyncNow: () -> Unit = {}) {
     MaterialTheme(colors = WearColors) {
         val pager = rememberPagerState { 2 }
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
                 if (page == 0) ScorePage(state, engine, haptics, phoneConnected, onInteraction)
-                else ControlsPage(state, engine, haptics, phoneConnected, onInteraction, updateAvailable)
+                else ControlsPage(state, engine, haptics, phoneConnected, onInteraction, updateAvailable, sync, onSyncNow)
             }
             val indicator = remember(pager) {
                 object : PageIndicatorState {
@@ -255,7 +256,8 @@ fun formatClock(ms: Long, roundUp: Boolean): String {
 }
 
 @Composable
-private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit, updateAvailable: Boolean) {
+private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit, updateAvailable: Boolean,
+    sync: com.scoreup.shared.WearSync.Diagnostics, onSyncNow: () -> Unit) {
     val listState = rememberScalingLazyListState()
     var confirmReset by remember { mutableStateOf(false) }
     ScalingLazyColumn(Modifier.fillMaxSize().testTag("watch_controls"), state = listState) {
@@ -313,6 +315,17 @@ private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptic
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             )
         }
+        item {
+            Chip(
+                label = { Text(stringResource(R.string.sync_now)) }, onClick = { onInteraction(); onSyncNow(); haptics.tick() },
+                modifier = Modifier.fillMaxWidth().testTag("watch_sync_now"), colors = ChipDefaults.secondaryChipColors(),
+            )
+        }
+        item {
+            Text("📡 ${sync.connectedNodes}/${sync.scoreUpPeers} · ↑${sync.messagesSent + sync.dataItemsPublished} ↓${sync.messagesReceived + sync.dataItemsReceived}",
+                color = Color(0xFF8A93B2), fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        }
+        sync.lastError?.let { err -> item { Text(err, color = Color(0xFFFF8A8A), fontSize = 9.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) } }
         item { Text("v${BuildConfig.VERSION_NAME}", color = Color(0xFF59607A), fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
         item { Text(stringResource(R.string.made_with_love), color = Color(0xFF8A93B2), fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
     }

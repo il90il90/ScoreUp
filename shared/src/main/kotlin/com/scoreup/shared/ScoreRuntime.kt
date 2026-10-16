@@ -33,4 +33,8 @@ class SyncListenerService : WearableListenerService() {
     override fun onMessageReceived(event: MessageEvent) {
         ScoreRuntime.getOrNull()?.sync?.onMessage(event)
     }
+
+    override fun onDataChanged(events: com.google.android.gms.wearable.DataEventBuffer) {
+        ScoreRuntime.getOrNull()?.sync?.onDataChanged(events) ?: events.release()
+    }
 }

@@ -172,4 +172,9 @@
     <string name="check_updates">בדיקת עדכונים</string>
     <string name="update_check_failed">לא ניתן לבדוק עדכונים. בדקו את החיבור לאינטרנט.</string>
     <string name="pick_watch">כמה מכשירים מפעילים ניפוי באגים אלחוטי. איזה מהם השעון שלכם?</string>
+    <string name="sync_ok">אפליקציית השעון מחוברת · מסתנכרן</string>
+    <string name="sync_no_peer">ScoreUp בשעון לא זמין כרגע</string>
+    <string name="sync_now">סנכרן עכשיו</string>
+    <string name="sync_stats">מכשירים %1$d · ScoreUp %2$d · נשלחו %3$d / התקבלו %4$d · מצב %5$d / %6$d</string>
+    <string name="sync_last_received">עדכון אחרון מהשעון: %1$s</string>
 </resources>

@@ -120,6 +120,7 @@ class MainActivity : FragmentActivity() {
         val presentationDisplay by presentation.activeDisplay.collectAsState()
         val castTo by castSender.connectedTo.collectAsState()
         val installerState by installer.state.collectAsState()
+        val syncDiag by app.runtime.sync.diagnostics.collectAsState()
         var screen by rememberSaveable { mutableStateOf(Screen.BOARD) }
         var showLanguage by rememberSaveable { mutableStateOf(false) }
         val update by availableUpdate.collectAsState()
@@ -160,6 +161,7 @@ class MainActivity : FragmentActivity() {
                     onStartDiscovery = installer::startDiscovery, onStopDiscovery = installer::stopDiscovery,
                     onPair = { h, p, c -> installer.pair(h, p, c) }, onInstall = { h, p -> installer.install(h, p) },
                     onReset = installer::reset, onBack = { screen = Screen.BOARD },
+                    sync = syncDiag, onSyncNow = app.runtime.sync::handshake,
                 )
                 Screen.TV -> CastScreen(presentationDisplay, castSender.available, castTo, onBack = { screen = Screen.BOARD }, onOpenTvMode = { screen = Screen.TV_MODE })
                 Screen.TV_MODE -> TvScoreboard(state, Modifier.testTag("tv_mode").clickable { screen = Screen.TV })

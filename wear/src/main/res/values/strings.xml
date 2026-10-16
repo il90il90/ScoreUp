@@ -19,4 +19,5 @@
     <string name="half_short">H%1$d</string>
     <string name="update_on_phone">Update ready — on your phone open ScoreUp → ⌚ → Update</string>
     <string name="made_with_love">Made with ❤️ from Israel</string>
+    <string name="sync_now">Sync now</string>
 </resources>

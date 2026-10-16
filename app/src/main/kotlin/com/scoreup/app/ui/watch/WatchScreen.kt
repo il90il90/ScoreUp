@@ -88,6 +88,8 @@ fun WatchScreen(
     onInstall: (String, Int) -> Unit,
     onReset: () -> Unit,
     onBack: () -> Unit,
+    sync: WearSync.Diagnostics = WearSync.Diagnostics(),
+    onSyncNow: () -> Unit = {},
 ) {
     DisposableEffect(Unit) { onStartDiscovery(); onDispose { onStopDiscovery() } }
 
@@ -124,6 +126,7 @@ fun WatchScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             StatusCard(installer, peers, connected)
+            SyncCard(sync, peers.isNotEmpty(), onSyncNow)
             if (Build.VERSION.SDK_INT < 30) Text(stringResource(R.string.installer_needs_android11), color = MaterialTheme.colorScheme.error)
 
             if (step > 0) StepDots(step)
@@ -180,6 +183,26 @@ fun WatchScreen(
             }
             Troubleshooting()
             com.scoreup.app.ui.common.MadeWithLove()
+        }
+    }
+}
+
+/** Live phone⇄watch sync health so problems are visible (and screenshot-able) instead of silent. */
+@Composable
+private fun SyncCard(d: WearSync.Diagnostics, connected: Boolean, onSyncNow: () -> Unit) {
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.testTag("sync_card")) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(10.dp).background(if (connected) Color(0xFF00E58F) else Color(0xFFFF3D57), CircleShape))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(if (connected) R.string.sync_ok else R.string.sync_no_peer), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                TextButton(onClick = onSyncNow, modifier = Modifier.testTag("sync_now")) { Text(stringResource(R.string.sync_now)) }
+            }
+            Text(stringResource(R.string.sync_stats, d.connectedNodes, d.scoreUpPeers, d.messagesSent, d.messagesReceived, d.dataItemsPublished, d.dataItemsReceived),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (d.lastReceivedMs > 0) Text(stringResource(R.string.sync_last_received, android.text.format.DateUtils.getRelativeTimeSpanString(d.lastReceivedMs).toString()),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            d.lastError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("sync_error")) }
         }
     }
 }
