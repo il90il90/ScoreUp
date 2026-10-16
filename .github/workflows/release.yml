@@ -7,6 +7,11 @@ on:
     branches: [main]
     paths-ignore: ["**.md", "docs/**", "cast-receiver/**"]
   workflow_dispatch:
+    inputs:
+      minify:
+        description: "R8-shrink the release APKs"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -49,7 +54,7 @@ jobs:
           SCOREUP_KEY_ALIAS: ${{ secrets.SCOREUP_KEY_ALIAS }}
           SCOREUP_KEY_PASSWORD: ${{ secrets.SCOREUP_KEY_PASSWORD }}
           SCOREUP_CAST_APP_ID: ${{ vars.SCOREUP_CAST_APP_ID }}
-        run: ./gradlew --no-daemon :core:test :adb:test :app:testDebugUnitTest :wear:testDebugUnitTest :app:assembleRelease :wear:assembleRelease
+        run: ./gradlew --no-daemon :core:test :adb:test :app:testDebugUnitTest :wear:testDebugUnitTest :app:assembleRelease :wear:assembleRelease -Pscoreup.minify=${{ github.event_name != 'workflow_dispatch' || inputs.minify }}
       - name: Publish
         if: steps.skip.outputs.skip != 'true'
         env: { GH_TOKEN: "${{ github.token }}" }
