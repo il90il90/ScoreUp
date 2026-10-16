@@ -18,4 +18,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "ScoreUp"
-include(":core", ":shared", ":app", ":wear")
+include(":core", ":adb", ":shared", ":app", ":wear")

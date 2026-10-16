@@ -96,10 +96,8 @@ dependencies {
     implementation(libs.compose.animation)
     implementation(libs.play.cast.framework)
     implementation(libs.androidx.mediarouter)
-    implementation(libs.libadb)
+    implementation(project(":adb"))
     implementation(libs.conscrypt)
-    implementation(libs.sun.security)
-    implementation(libs.hiddenapibypass)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 

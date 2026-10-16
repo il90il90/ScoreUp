@@ -1,0 +1,87 @@
+<!doctype html>
+<!--
+  ScoreUp Google Cast custom web receiver.
+  Host this file on any HTTPS URL (e.g. GitHub Pages), register it as a Custom Receiver in the
+  Google Cast SDK Developer Console, and enter the resulting App ID in ScoreUp → Settings.
+  The phone sends the live match as JSON on namespace urn:x-cast:com.scoreup.live.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ScoreUp Live</title>
+<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+<style>
+  :root { --home: #FF3D57; --away: #00C2FF; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 100%; height: 100%; background: #04060D; color: #fff; overflow: hidden;
+    font-family: "Roboto Condensed", "Roboto", system-ui, sans-serif; }
+  .top { display: flex; align-items: center; padding: 3vh 4vw 0; }
+  .brand { color: #FFD60A; font-weight: 900; letter-spacing: .4vw; font-size: 3.2vh; }
+  .live { margin-inline-start: auto; background: #FF3D57; border-radius: 99px; padding: .6vh 1.6vw; font-weight: 900; font-size: 2.2vh; }
+  .arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 2vw; height: 86vh; padding: 3vh 4vw; }
+  .team { border-radius: 4vh; display: flex; flex-direction: column; align-items: center; padding: 3vh 2vw; }
+  .home { background: linear-gradient(180deg, var(--home), color-mix(in srgb, var(--home) 35%, #0B1020) 60%, #0B1020); }
+  .away { background: linear-gradient(180deg, var(--away), color-mix(in srgb, var(--away) 35%, #0B1020) 60%, #0B1020); }
+  .name { font-weight: 900; font-size: 6vh; letter-spacing: .3vw; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .score { flex: 1; display: flex; align-items: center; font-weight: 900; font-size: 34vh; font-variant-numeric: tabular-nums; line-height: 1; }
+  .bump { animation: bump .35s ease-out; }
+  @keyframes bump { 0% { transform: scale(1.25); } 100% { transform: scale(1); } }
+  .dots { display: flex; gap: 1vw; margin-top: 1vh; }
+  .dot { width: 2.2vh; height: 2.2vh; border-radius: 50%; background: rgba(255,255,255,.25); }
+  .dot.on { background: #fff; }
+  .mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; min-width: 18vw; }
+  .period { font-weight: 900; font-size: 5.5vh; }
+  .clock { background: #111729; border-radius: 2vh; padding: 1vh 2vw; font: 700 8vh/1 "Roboto Mono", monospace; }
+  .clock.running { color: #FFD60A; }
+  .sets { color: #8A93B2; font-weight: 700; font-size: 3.5vh; text-align: center; }
+  .final { color: #FFD60A; }
+  .waiting { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 5vh; color: #8A93B2; }
+</style>
+</head>
+<body>
+<div class="top"><div class="brand">SCOREUP</div><div class="live">● LIVE</div></div>
+<div class="arena" id="arena" hidden>
+  <div class="team home"><div class="name" id="hn">HOME</div><div class="dots" id="hd"></div><div class="score" id="hs">0</div></div>
+  <div class="mid"><div class="period" id="period"></div><div class="clock" id="clock">00:00</div><div class="sets" id="sets"></div></div>
+  <div class="team away"><div class="name" id="an">AWAY</div><div class="dots" id="ad"></div><div class="score" id="as">0</div></div>
+</div>
+<div class="waiting" id="waiting">Waiting for ScoreUp…</div>
+<script>
+  const NS = 'urn:x-cast:com.scoreup.live';
+  let state = null, receivedAt = 0;
+  const $ = (id) => document.getElementById(id);
+  const fmt = (ms) => { const t = Math.max(0, Math.floor(ms / 1000)); const m = Math.floor(t / 60), s = t % 60; return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); };
+  function setScore(el, v) { if (el.textContent !== String(v)) { el.textContent = v; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } }
+  function dots(el, won, total) { el.innerHTML = ''; for (let i = 0; i < total; i++) { const d = document.createElement('div'); d.className = 'dot' + (i < won ? ' on' : ''); el.appendChild(d); } }
+  function render() {
+    if (!state) return;
+    $('waiting').hidden = true; $('arena').hidden = false;
+    document.documentElement.style.setProperty('--home', state.home.color);
+    document.documentElement.style.setProperty('--away', state.away.color);
+    $('hn').textContent = state.home.name; $('an').textContent = state.away.name;
+    setScore($('hs'), state.home.score); setScore($('as'), state.away.score);
+    const setsToWin = Math.max(state.home.sets, state.away.sets, 3);
+    if (state.setBased) { dots($('hd'), state.home.sets, setsToWin); dots($('ad'), state.away.sets, setsToWin); } else { $('hd').innerHTML = ''; $('ad').innerHTML = ''; }
+    const p = state.finished ? 'FINAL' : state.setBased ? 'SET ' + state.period : state.periods === 4 ? 'Q' + state.period : state.periods > 0 ? 'P' + state.period : '';
+    $('period').textContent = p; $('period').className = 'period' + (state.finished ? ' final' : '');
+    $('sets').innerHTML = (state.sets || []).map(s => s[0] + ' – ' + s[1]).join('<br>');
+    tick();
+  }
+  function tick() {
+    if (!state) return;
+    const c = state.clock; const delta = c.running ? Date.now() - receivedAt : 0;
+    $('clock').textContent = fmt(c.countsDown ? c.displayMs - delta : c.displayMs + delta);
+    $('clock').className = 'clock' + (c.running ? ' running' : '');
+  }
+  setInterval(tick, 250);
+  const context = cast.framework.CastReceiverContext.getInstance();
+  context.addCustomMessageListener(NS, (event) => {
+    try { state = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; receivedAt = Date.now(); render(); } catch (e) { console.error(e); }
+  });
+  const options = new cast.framework.CastReceiverOptions();
+  options.disableIdleTimeout = true;
+  options.customNamespaces = { [NS]: cast.framework.system.MessageType.JSON };
+  context.start(options);
+</script>
+</body>
+</html>

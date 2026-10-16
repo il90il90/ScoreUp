@@ -11,10 +11,7 @@ coreKtx = "1.15.0"
 playWearable = "18.2.0"
 castFramework = "21.5.0"
 mediarouter = "1.7.0"
-libadb = "3.0.0"
 conscrypt = "2.5.2"
-sunSecurity = "1.1"
-hiddenApiBypass = "4.3"
 junit = "4.13.2"
 robolectric = "4.14.1"
 androidxTestCore = "1.6.1"
@@ -59,10 +56,8 @@ coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-androi
 coroutines-play = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
-libadb = { module = "io.github.muntashirakon:libadb-android", version.ref = "libadb" }
 conscrypt = { module = "org.conscrypt:conscrypt-android", version.ref = "conscrypt" }
-sun-security = { module = "io.github.muntashirakon:sun-security-android", version.ref = "sunSecurity" }
-hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenApiBypass" }
+conscrypt-openjdk = { module = "org.conscrypt:conscrypt-openjdk-uber", version.ref = "conscrypt" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
