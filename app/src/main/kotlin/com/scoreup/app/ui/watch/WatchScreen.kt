@@ -172,6 +172,7 @@ fun WatchScreen(
                 TextButton(onClick = { manual = !manual }) { Text(stringResource(R.string.manual_entry)) }
             }
             Troubleshooting()
+            com.scoreup.app.ui.common.MadeWithLove()
         }
     }
 }

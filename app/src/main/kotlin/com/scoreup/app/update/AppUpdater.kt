@@ -17,19 +17,31 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Checks the public releases repo for a newer phone APK (which also carries the newest watch
- * APK) and downloads + hands it to the system installer. No token: the releases repo is public.
+ * Remote updates from this project's public GitHub Releases. The phone APK carries the matching
+ * watch APK, so updating the phone also delivers the newest watch app (installed on the watch
+ * with one tap from the ⌚ screen; the scoreboard shows a banner when the watch is behind).
  */
 class AppUpdater(private val context: Context) {
-    data class Release(val versionCode: Long, val versionName: String, val apkUrl: String)
+    data class Release(val versionCode: Long, val versionName: String, val apkUrl: String, val notes: String = "")
 
-    suspend fun check(): Release? = withContext(Dispatchers.IO) {
+    sealed interface Result {
+        data class Available(val release: Release) : Result
+        data object UpToDate : Result
+        data object Failed : Result
+    }
+
+    suspend fun check(): Release? = (checkDetailed() as? Result.Available)?.release
+
+    suspend fun checkDetailed(): Result = withContext(Dispatchers.IO) {
         runCatching {
-            val conn = URL(MANIFEST_URL).openConnection() as HttpURLConnection
+            val conn = URL(LATEST_URL).openConnection() as HttpURLConnection
             conn.connectTimeout = 8_000; conn.readTimeout = 8_000
-            conn.setRequestProperty("Cache-Control", "no-cache")
+            conn.setRequestProperty("Accept", "application/vnd.github+json")
             conn.inputStream.use { parse(it.readBytes().decodeToString()) }
-        }.getOrNull()?.takeIf { it.versionCode > BuildConfig.VERSION_CODE }
+        }.fold(
+            onSuccess = { r -> if (r != null && r.versionCode > BuildConfig.VERSION_CODE) Result.Available(r) else if (r != null) Result.UpToDate else Result.Failed },
+            onFailure = { Result.Failed },
+        )
     }
 
     /** Downloads with the system DownloadManager (progress in the notification shade), then opens the installer. */
@@ -56,13 +68,26 @@ class AppUpdater(private val context: Context) {
     }
 
     companion object {
-        const val RELEASES_REPO = "il90il90/scoreup-releases"
-        const val MANIFEST_URL = "https://raw.githubusercontent.com/$RELEASES_REPO/main/latest.json"
+        const val REPO = "il90il90/ScoreUp"
+        const val LATEST_URL = "https://api.github.com/repos/$REPO/releases/latest"
+        const val RELEASES_PAGE = "https://github.com/$REPO/releases/latest"
         const val APK_MIME = "application/vnd.android.package-archive"
 
+        /**
+         * Parses a GitHub "latest release" response. Tags are v<major.minor.N> and the build sets
+         * versionCode = 1000 + N, so the code is derived from the tag's last component.
+         */
         fun parse(json: String): Release? = runCatching {
             val o = JSONObject(json)
-            Release(o.getLong("versionCode"), o.getString("versionName"), o.getString("phoneApkUrl"))
+            val name = o.getString("tag_name").removePrefix("v")
+            val build = name.substringAfterLast('.').toLong()
+            val assets = o.getJSONArray("assets")
+            var url: String? = null
+            for (i in 0 until assets.length()) {
+                val a = assets.getJSONObject(i)
+                if (a.getString("name").startsWith("ScoreUp-phone-") && a.getString("name").endsWith(".apk")) url = a.getString("browser_download_url")
+            }
+            Release(1000 + build, name, url ?: return null, o.optString("body"))
         }.getOrNull()
     }
 }

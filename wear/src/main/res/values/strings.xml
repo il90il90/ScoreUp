@@ -17,4 +17,6 @@
     <string name="final_label">FINAL</string>
     <string name="set_short">SET %1$d</string>
     <string name="half_short">H%1$d</string>
+    <string name="update_on_phone">Update ready — on your phone open ScoreUp → ⌚ → Update</string>
+    <string name="made_with_love">Made with ❤️ from Israel</string>
 </resources>

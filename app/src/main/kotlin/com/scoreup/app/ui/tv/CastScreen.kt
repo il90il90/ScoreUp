@@ -82,6 +82,7 @@ fun CastScreen(
                     }
                 }
             }
+            com.scoreup.app.ui.common.MadeWithLove()
         }
     }
 }

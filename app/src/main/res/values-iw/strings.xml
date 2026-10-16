@@ -167,4 +167,8 @@
     <string name="up_to_date">יש לך את הגרסה האחרונה</string>
     <string name="pair_again">צמד מחדש</string>
     <string name="language_menu">שפה · Language</string>
+    <string name="made_with_love_prefix">נוצר עם ❤️ מ</string>
+    <string name="made_with_love_israel">ישראל</string>
+    <string name="check_updates">בדיקת עדכונים</string>
+    <string name="update_check_failed">לא ניתן לבדוק עדכונים. בדקו את החיבור לאינטרנט.</string>
 </resources>

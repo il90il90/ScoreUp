@@ -23,7 +23,8 @@ A sports scoreboard for Android phones, tablets and foldables, with a **Wear OS 
 
 ## Install
 
-1. Download `ScoreUp-phone-<version>.apk` from the Releases page and install it on your phone (allow "install unknown apps" for your browser).
+1. On your phone open **[the latest release](https://github.com/il90il90/ScoreUp/releases/latest)**, download `ScoreUp-phone-<version>.apk` and install it (allow "install unknown apps" for your browser).
+   After that ScoreUp updates itself: it checks this repo's releases on launch (and via Settings → Check for updates). The phone app carries the matching watch app; when the watch is behind, the scoreboard shows an "Update watch" banner and the watch shows a notice — one tap on the ⌚ screen updates it.
 2. Open **ScoreUp → ⌚ → Install on your watch** and follow the 4 steps:
    1. On the watch: Settings → System → About → Versions → tap **Build number** 7×.
    2. Settings → Developer options → enable **ADB debugging** and **Wireless debugging**. Watch and phone must be on the same Wi-Fi.
@@ -84,3 +85,7 @@ cast-receiver/  Google Cast web receiver
 - **Phone⇄watch sync** in a real paired phone + watch setup has not been tested yet. The protocol itself is covered by the JVM tests.
 - **Native Cast** needs a registered App ID, which is Google policy for custom receivers.
 - The default signing key is a committed development key. Before a public release, add your own key as the `SCOREUP_KEYSTORE_*` secrets. Changing keys later requires reinstalling the app.
+
+---
+
+Made with ❤️ from [Israel](https://t.me/israelcohen)

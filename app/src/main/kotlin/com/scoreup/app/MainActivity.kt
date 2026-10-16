@@ -163,7 +163,7 @@ class MainActivity : FragmentActivity() {
                 )
                 Screen.TV -> CastScreen(presentationDisplay, castSender.available, castTo, onBack = { screen = Screen.BOARD }, onOpenTvMode = { screen = Screen.TV_MODE })
                 Screen.TV_MODE -> TvScoreboard(state, Modifier.testTag("tv_mode").clickable { screen = Screen.TV })
-                Screen.SETTINGS -> SettingsScreen(settings, onBack = { screen = Screen.BOARD }, onChange = app.settings::update)
+                Screen.SETTINGS -> SettingsScreen(settings, onBack = { screen = Screen.BOARD }, onCheckUpdates = ::checkForUpdatesManually, onChange = app.settings::update)
             }
         }
 
@@ -197,6 +197,16 @@ class MainActivity : FragmentActivity() {
             confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.testTag("welcome_go")) { Text(stringResource(R.string.lets_go)) } },
             dismissButton = { TextButton(onClick = onWatch) { Text(stringResource(R.string.install_watch_cta)) } },
         )
+    }
+
+    private fun checkForUpdatesManually() {
+        lifecycleScope.launch {
+            when (val r = updater.checkDetailed()) {
+                is AppUpdater.Result.Available -> availableUpdate.value = r.release
+                AppUpdater.Result.UpToDate -> android.widget.Toast.makeText(this@MainActivity, R.string.up_to_date, android.widget.Toast.LENGTH_SHORT).show()
+                AppUpdater.Result.Failed -> android.widget.Toast.makeText(this@MainActivity, R.string.update_check_failed, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun setTvMode(on: Boolean) {

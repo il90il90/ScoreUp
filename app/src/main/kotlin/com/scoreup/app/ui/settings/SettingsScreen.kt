@@ -35,7 +35,7 @@ import com.scoreup.app.ui.common.ScreenScaffold
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(state: SettingsState, onBack: () -> Unit, onChange: ((SettingsState) -> SettingsState) -> Unit) {
+fun SettingsScreen(state: SettingsState, onBack: () -> Unit, onCheckUpdates: () -> Unit = {}, onChange: ((SettingsState) -> SettingsState) -> Unit) {
     ScreenScaffold(stringResource(R.string.settings), onBack) { pad ->
         Column(
             Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -71,7 +71,11 @@ fun SettingsScreen(state: SettingsState, onBack: () -> Unit, onChange: ((Setting
             }
             Card(stringResource(R.string.about)) {
                 Text(stringResource(R.string.version_fmt, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), modifier = Modifier.testTag("version"))
+                androidx.compose.material3.OutlinedButton(onClick = onCheckUpdates, modifier = Modifier.testTag("check_updates")) {
+                    Text(stringResource(R.string.check_updates))
+                }
             }
+            com.scoreup.app.ui.common.MadeWithLove()
         }
     }
 }

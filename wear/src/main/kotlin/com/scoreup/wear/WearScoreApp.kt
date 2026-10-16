@@ -89,13 +89,13 @@ private val WearColors = Colors(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun WearScoreApp(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit) {
+fun WearScoreApp(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit, updateAvailable: Boolean = false) {
     MaterialTheme(colors = WearColors) {
         val pager = rememberPagerState { 2 }
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             HorizontalPager(pager, Modifier.fillMaxSize()) { page ->
                 if (page == 0) ScorePage(state, engine, haptics, phoneConnected, onInteraction)
-                else ControlsPage(state, engine, haptics, phoneConnected, onInteraction)
+                else ControlsPage(state, engine, haptics, phoneConnected, onInteraction, updateAvailable)
             }
             val indicator = remember(pager) {
                 object : PageIndicatorState {
@@ -255,10 +255,14 @@ fun formatClock(ms: Long, roundUp: Boolean): String {
 }
 
 @Composable
-private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit) {
+private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit, updateAvailable: Boolean) {
     val listState = rememberScalingLazyListState()
     var confirmReset by remember { mutableStateOf(false) }
     ScalingLazyColumn(Modifier.fillMaxSize().testTag("watch_controls"), state = listState) {
+        if (updateAvailable) item {
+            Text(stringResource(R.string.update_on_phone), color = Color(0xFFFFD60A), fontSize = 12.sp, textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().testTag("watch_update_notice"))
+        }
         item { ListHeader { Text(stringResource(R.string.controls)) } }
         item {
             Chip(
@@ -310,6 +314,7 @@ private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptic
             )
         }
         item { Text("v${BuildConfig.VERSION_NAME}", color = Color(0xFF59607A), fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
+        item { Text(stringResource(R.string.made_with_love), color = Color(0xFF8A93B2), fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
     }
     Dialog(showDialog = confirmReset, onDismissRequest = { confirmReset = false }) {
         Alert(

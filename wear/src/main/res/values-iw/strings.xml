@@ -16,4 +16,6 @@
     <string name="final_label">סיום</string>
     <string name="set_short">מערכה %1$d</string>
     <string name="half_short">מחצית %1$d</string>
+    <string name="update_on_phone">יש עדכון — בטלפון פתחו ScoreUp ← ⌚ ← עדכן</string>
+    <string name="made_with_love">נוצר עם ❤️ מישראל</string>
 </resources>

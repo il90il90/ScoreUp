@@ -69,6 +69,7 @@ fun HistoryScreen(items: List<MatchSummary>, onBack: () -> Unit, onRematch: (Mat
                 contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(items, key = { it.matchId }) { m -> HistoryCard(m, onRematch, onDelete) }
+                item { com.scoreup.app.ui.common.MadeWithLove() }
             }
         }
     }

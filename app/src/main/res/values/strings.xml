@@ -168,4 +168,8 @@
     <string name="up_to_date">You have the latest version</string>
     <string name="pair_again">Pair again</string>
     <string name="language_menu">Language · שפה</string>
+    <string name="made_with_love_prefix">Made with ❤️ from </string>
+    <string name="made_with_love_israel">Israel</string>
+    <string name="check_updates">Check for updates</string>
+    <string name="update_check_failed">Couldn’t check for updates. Check your internet connection.</string>
 </resources>
