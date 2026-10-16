@@ -38,17 +38,17 @@ class PhoneE2ETest {
         rule.onNodeWithTag("team_away").performClick()
         device.setOrientationLeft()
         rule.waitForIdle()
-        rule.onNodeWithTag("score_home", useUnmergedTree = true).assertTextEquals("2")
-        rule.onNodeWithTag("score_away", useUnmergedTree = true).assertTextEquals("4")
+        rule.onNodeWithTag("score_home", useUnmergedTree = true).assertTextEquals("1")
+        rule.onNodeWithTag("score_away", useUnmergedTree = true).assertTextEquals("2")
         rule.activityRule.scenario.recreate()
         rule.waitForIdle()
-        rule.onNodeWithTag("score_away", useUnmergedTree = true).assertTextEquals("4")
+        rule.onNodeWithTag("score_away", useUnmergedTree = true).assertTextEquals("2")
     }
 
     @Test fun rapidTapsCountExactly() {
         repeat(40) { rule.onNodeWithTag("team_home").performClick() }
         rule.waitForIdle()
-        rule.onNodeWithTag("score_home", useUnmergedTree = true).assertTextEquals("80")
+        rule.onNodeWithTag("score_home", useUnmergedTree = true).assertTextEquals("40")
         assertThat(app.runtime.engine.activeLog.events).hasSize(40)
     }
 
@@ -57,6 +57,6 @@ class PhoneE2ETest {
         rule.onNodeWithTag("nav_tv").performClick()
         rule.onNodeWithTag("open_tv_mode").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("2")
+        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("1")
     }
 }

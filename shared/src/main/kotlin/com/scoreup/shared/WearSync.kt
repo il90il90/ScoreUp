@@ -140,7 +140,13 @@ class WearSync(
         val msg = SyncCodec.decode(event.data) ?: return note("Unreadable message from ${event.sourceNodeId}")
         if (msg is SyncMessage.Summary) {
             peerVersions[event.sourceNodeId] = msg.appVersionCode
-            _peers.update { list -> list.map { if (it.id == event.sourceNodeId) it.copy(appVersionCode = msg.appVersionCode) else it } }
+            _peers.update { list ->
+                // A node that talks our protocol IS a peer, even if the capability lookup missed it.
+                val known = list.any { it.id == event.sourceNodeId }
+                val base = if (known) list else list + (_connectedDevices.value.firstOrNull { it.id == event.sourceNodeId }
+                    ?: Peer(event.sourceNodeId, "ScoreUp", true))
+                base.map { if (it.id == event.sourceNodeId) it.copy(appVersionCode = msg.appVersionCode) else it }
+            }
         }
         _lastSyncMs.value = System.currentTimeMillis()
         _diagnostics.update { it.copy(messagesReceived = it.messagesReceived + 1, lastReceivedMs = System.currentTimeMillis()) }
@@ -178,7 +184,10 @@ class WearSync(
     // ------------------------------------------------------------------ outbound
 
     private suspend fun deliver(m: SyncMessage) {
-        val targets = _peers.value.ifEmpty { refreshPeers(); _peers.value }
+        // Peers advertising our capability, plus every connected node: if the capability lookup
+        // is stale or fails, the message still reaches the watch (others simply ignore it).
+        if (_peers.value.isEmpty() && _connectedDevices.value.isEmpty()) refreshPeers()
+        val targets = (_peers.value + _connectedDevices.value).distinctBy { it.id }
         if (targets.isEmpty()) return // the DataItem channel and reconnect summaries will catch up
         val bytes = SyncCodec.encode(m)
         for (node in targets) {
@@ -205,15 +214,16 @@ class WearSync(
     }
 
     suspend fun refreshPeers() {
+        runCatching { _connectedDevices.value = nodeClient.connectedNodes.await().map { it.toPeer() } }
+            .onFailure { note("Connected devices: ${describe(it)}") }
         runCatching {
             val info = capabilityClient.getCapability(CAPABILITY, CapabilityClient.FILTER_REACHABLE).await()
             updatePeers(info)
-            _connectedDevices.value = nodeClient.connectedNodes.await().map { it.toPeer() }
             _diagnostics.update { it.copy(connectedNodes = _connectedDevices.value.size, scoreUpPeers = _peers.value.size) }
         }.onFailure {
             // Play services / Wear OS companion missing: no peers, app keeps working standalone.
             _peers.value = emptyList()
-            note("Find watch/phone: ${describe(it)}")
+            note("Find ScoreUp on watch/phone: ${describe(it)}")
         }
     }
 

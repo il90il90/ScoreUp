@@ -39,6 +39,9 @@ data class MatchLog(val header: MatchHeader, val events: Map<String, MatchEvent>
     fun missingFor(peerVector: Map<String, Long>): List<MatchEvent> =
         events.values.filter { it.id.seq > (peerVector[it.id.device] ?: 0L) }.sortedWith(MatchReducer.ORDER)
 
+    /** Wall time of the last thing that happened in this match (its creation or its newest event). */
+    fun lastActivityMs(): Long = maxOf(header.createdAtMs, events.values.maxOfOrNull { it.wallMs } ?: 0L)
+
     fun maxLamport(): Long = maxOf(header.lamport, events.values.maxOfOrNull { it.lamport } ?: 0L)
 
     fun nextSeqFor(device: String): Long = (events.values.filter { it.id.device == device }.maxOfOrNull { it.id.seq } ?: 0L) + 1

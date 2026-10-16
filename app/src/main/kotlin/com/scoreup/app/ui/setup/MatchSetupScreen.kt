@@ -83,7 +83,7 @@ fun MatchSetupScreen(current: MatchConfig, hasActivity: Boolean, onBack: () -> U
                         Surface(
                             onClick = {
                                 val rules = Rules.defaultsFor(sport)
-                                val tap = if (sport == Sport.BASKETBALL) 2 else rules.pointOptions.first()
+                                val tap = 1
                                 config = config.copy(sport = sport, rules = rules, tapPoints = tap)
                             },
                             shape = RoundedCornerShape(18.dp),

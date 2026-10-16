@@ -40,15 +40,18 @@ class PhoneUiTest {
 
     private fun score(side: String) = rule.onNodeWithTag("score_$side", useUnmergedTree = true)
 
-    @Test fun tapAddsDefaultBasketballTwoPoints() {
+    @Test fun tapAddsOnePointByDefault() {
         rule.onNodeWithTag("team_home").performClick()
         rule.waitForIdle()
-        score("home").assertTextEquals("2")
+        score("home").assertTextEquals("1")
         score("away").assertTextEquals("0")
     }
 
     @Test fun pointsPerTapAndUndo() {
-        rule.onNodeWithTag("tap_3").performClick()
+        rule.onNodeWithTag("tap_points_value", useUnmergedTree = true).assertTextEquals("+1")
+        rule.onNodeWithTag("tap_points_edit").performClick()
+        rule.onNodeWithTag("number_input").performTextReplacement("3")
+        rule.onNodeWithTag("number_save").performClick()
         rule.onNodeWithTag("team_away").performClick()
         rule.onNodeWithTag("team_away").performClick()
         rule.waitForIdle()
@@ -73,7 +76,7 @@ class PhoneUiTest {
         rule.onNodeWithTag("confirm_reset").performClick()
         rule.waitForIdle()
         score("home").assertTextEquals("0")
-        assertThat(app.history.items.value.first().homeScore).isEqualTo(2)
+        assertThat(app.history.items.value.first().homeScore).isEqualTo(1)
         rule.onNodeWithTag("menu").performClick()
         rule.onNodeWithTag("menu_history").performClick()
         rule.onAllNodesWithTag("history_item")[0].assertIsDisplayed()
@@ -116,10 +119,10 @@ class PhoneUiTest {
         rule.onNodeWithTag("nav_tv").performClick()
         rule.onNodeWithTag("open_tv_mode").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("2")
+        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("1")
         rule.runOnUiThread { app.runtime.engine.addPoints(com.scoreup.core.Side.HOME, 3) }
         rule.waitForIdle()
-        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("5")
+        rule.onNodeWithTag("tv_score_home", useUnmergedTree = true).assertTextEquals("4")
     }
 
     @Test fun watchInstallerScreenOpens() {

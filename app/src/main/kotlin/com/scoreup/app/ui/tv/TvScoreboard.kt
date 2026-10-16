@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.scoreup.app.ui.common.formatClock
 import com.scoreup.app.ui.common.periodLabel
-import com.scoreup.app.ui.common.sportEmoji
 import com.scoreup.app.ui.common.teamName
 import com.scoreup.app.ui.theme.ClockDigits
 import com.scoreup.app.ui.theme.ScoreDigits
@@ -59,7 +58,7 @@ fun TvScoreboard(state: MatchState, modifier: Modifier = Modifier) {
         val unit = minOf(maxWidth.value / 16f, maxHeight.value / 9f)
         Column(Modifier.fillMaxSize().padding((unit * 0.4f).dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("${sportEmoji(state.config.sport)}  SCOREUP", color = Color(0xFFFFD60A), fontWeight = FontWeight.Black, fontSize = (unit * 0.5f).sp, letterSpacing = (unit * 0.08f).sp)
+                Text("SCOREUP", color = Color(0xFFFFD60A), fontWeight = FontWeight.Black, fontSize = (unit * 0.5f).sp, letterSpacing = (unit * 0.08f).sp)
                 Spacer(Modifier.weight(1f))
                 Box(Modifier.clip(CircleShape).background(Color(0xFFFF3D57)).padding(horizontal = (unit * 0.25f).dp, vertical = (unit * 0.06f).dp)) {
                     Text("● LIVE", color = Color.White, fontWeight = FontWeight.Black, fontSize = (unit * 0.32f).sp)

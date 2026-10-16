@@ -194,3 +194,53 @@ class FreshDeviceJoinTest {
         assertThat(watch.state.value.home).isEqualTo(2)
     }
 }
+
+/** "Whatever was updated last is the result" — even when the devices were on different matches. */
+class LastUpdateWinsTest {
+    private var now = 1_000L
+    private fun dev(id: String) = ScoreEngine(id, InMemorySessionStore(), clock = { now })
+    private fun link(a: ScoreEngine, b: ScoreEngine) { a.outbound = { b.receive(it) }; b.outbound = { a.receive(it) } }
+
+    @Test fun watchTapsAfterPhoneStartedAMatchWin() {
+        val phone = dev("phone-1"); val watch = dev("watch-1")
+        phone.newMatch(); phone.addPoints(Side.HOME, 2)          // phone at t=1000
+        now = 5_000
+        repeat(3) { watch.addPoints(Side.AWAY, 1) }               // watch (offline, own match) later
+        link(phone, watch)
+        watch.broadcastSummary(); phone.broadcastSummary()
+        assertThat(phone.state.value.matchId).isEqualTo(watch.state.value.matchId)
+        assertThat(phone.state.value.away).isEqualTo(3)
+        assertThat(watch.state.value.away).isEqualTo(3)
+    }
+
+    @Test fun phoneUpdatedLastWins() {
+        val phone = dev("phone-1"); val watch = dev("watch-1")
+        repeat(3) { watch.addPoints(Side.AWAY, 1) }
+        now = 9_000
+        phone.newMatch(); phone.addPoints(Side.HOME, 5)
+        link(phone, watch)
+        watch.broadcastSummary()
+        assertThat(watch.state.value.home).isEqualTo(5)
+        assertThat(watch.state.value.away).isEqualTo(0)
+        assertThat(phone.state.value.matchId).isEqualTo(watch.state.value.matchId)
+    }
+
+    @Test fun onTheSameMatchBothDevicesTapsAddUp() {
+        val phone = dev("phone-1"); val watch = dev("watch-1")
+        link(phone, watch)
+        watch.addPoints(Side.HOME, 1); phone.addPoints(Side.HOME, 1); watch.addPoints(Side.AWAY, 1)
+        assertThat(phone.state.value.home).isEqualTo(2)
+        assertThat(watch.state.value.home).isEqualTo(2)
+        assertThat(watch.state.value.away).isEqualTo(1)
+    }
+
+    @Test fun explicitNewMatchStartsFreshOnBoth() {
+        val phone = dev("phone-1"); val watch = dev("watch-1")
+        link(phone, watch)
+        watch.addPoints(Side.HOME, 4)
+        now = 20_000
+        phone.newMatch()
+        assertThat(watch.state.value.home).isEqualTo(0)
+        assertThat(watch.state.value.matchId).isEqualTo(phone.state.value.matchId)
+    }
+}

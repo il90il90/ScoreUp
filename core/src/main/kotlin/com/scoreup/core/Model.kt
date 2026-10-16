@@ -70,10 +70,10 @@ data class MatchConfig(
         val AWAY_COLORS = listOf(0xFF00C2FF, 0xFF00E58F, 0xFF3D7BFF, 0xFF00F0E0, 0xFFB4FF39, 0xFF9AA4B2)
         val PALETTE = (HOME_COLORS + AWAY_COLORS)
 
-        fun default(sport: Sport = Sport.BASKETBALL, homeName: String = "HOME", awayName: String = "AWAY"): MatchConfig {
+        fun default(sport: Sport = Sport.GENERIC, homeName: String = "HOME", awayName: String = "AWAY"): MatchConfig {
             val rules = Rules.defaultsFor(sport)
             return MatchConfig(sport, rules, TeamInfo(homeName, HOME_COLORS[0]), TeamInfo(awayName, AWAY_COLORS[0]),
-                tapPoints = rules.pointOptions.first().let { if (sport == Sport.BASKETBALL) 2 else it })
+                tapPoints = 1)
         }
     }
 }

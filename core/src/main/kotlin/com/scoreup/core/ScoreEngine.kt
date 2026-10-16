@@ -106,6 +106,10 @@ class ScoreEngine(
     @Synchronized
     fun receive(message: SyncMessage) {
         if (message.from == deviceId) return
+        try { receiveInternal(message) } finally { selectActive() }
+    }
+
+    private fun receiveInternal(message: SyncMessage) {
         when (message) {
             is SyncMessage.Events -> {
                 val log = adoptHeader(message.header)
@@ -121,8 +125,11 @@ class ScoreEngine(
                 }
             }
             is SyncMessage.Summary -> {
-                val log = adoptHeader(message.header) ?: return
+                val adopted = adoptHeader(message.header) ?: return
+                // Decide the winning match BEFORE replying, so peers never ping-pong summaries.
+                selectActive()
                 val active = snapshot.active
+                val log = if (adopted.matchId == active.matchId) active else snapshot.previous.firstOrNull { it.matchId == adopted.matchId } ?: adopted
                 sendMissing(log, message.vector)
                 val mine = log.vector()
                 val peerHasMore = message.vector.any { (dev, seq) -> seq > (mine[dev] ?: 0) }
@@ -140,19 +147,27 @@ class ScoreEngine(
         if (missing.isNotEmpty()) missing.chunked(200).forEach { outbound(SyncMessage.Events(deviceId, log.header, it)) }
     }
 
-    /** Returns the log for [header] (switching the active match if the header is newer), or null if unknown+older. */
+    /** Returns the log for [header], tracking it (as a previous match) if it is new to us. */
     private fun adoptHeader(header: MatchHeader): MatchLog? {
         val active = snapshot.active
         if (header.matchId == active.matchId) return active
         snapshot.previous.firstOrNull { it.matchId == header.matchId }?.let { return it }
-        if (header.isNewerThan(active.header)) {
-            switchTo(MatchLog(header), maxOf(snapshot.lamport, header.lamport))
-            return snapshot.active
-        }
-        // Older match we no longer track: keep a log so late events are still accepted and archived.
         val log = MatchLog(header)
-        commit(snapshot.copy(previous = (listOf(log) + snapshot.previous).take(keepPrevious)))
+        commit(snapshot.copy(previous = (listOf(log) + snapshot.previous).take(keepPrevious), lamport = maxOf(snapshot.lamport, header.lamport)))
         return log
+    }
+
+    /**
+     * "The last one updated wins": the active match on every device is the known match with the
+     * most recent activity (creation or newest event). Ties go to the newer header. Both devices
+     * hold the same logs once synced, so they converge on the same match.
+     */
+    private fun selectActive() {
+        val byRecency = compareBy<MatchLog> { it.lastActivityMs() }.then { a, b ->
+            when { a.header.isNewerThan(b.header) -> 1; b.header.isNewerThan(a.header) -> -1; else -> 0 }
+        }
+        val best = (listOf(snapshot.active) + snapshot.previous).maxWith(byRecency)
+        if (best.matchId != snapshot.active.matchId) switchTo(best, snapshot.lamport)
     }
 
     private fun updateLog(log: MatchLog, lamport: Long): SessionSnapshot =

@@ -177,4 +177,5 @@
     <string name="sync_now">סנכרן עכשיו</string>
     <string name="sync_stats">מכשירים %1$d · ScoreUp %2$d · נשלחו %3$d / התקבלו %4$d · מצב %5$d / %6$d</string>
     <string name="sync_last_received">עדכון אחרון מהשעון: %1$s</string>
+    <string name="edit_points">שינוי נקודות ללחיצה</string>
 </resources>

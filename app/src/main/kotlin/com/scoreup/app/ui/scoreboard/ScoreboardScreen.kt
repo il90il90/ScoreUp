@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Undo
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MoreVert
@@ -81,7 +82,6 @@ import androidx.compose.ui.unit.sp
 import com.scoreup.app.R
 import com.scoreup.app.ui.common.formatClock
 import com.scoreup.app.ui.common.periodLabel
-import com.scoreup.app.ui.common.sportEmoji
 import com.scoreup.app.ui.common.teamName
 import com.scoreup.app.ui.theme.ClockDigits
 import com.scoreup.app.ui.theme.toColor
@@ -175,8 +175,6 @@ fun ScoreboardScreen(
 @Composable
 private fun TopBar(state: MatchState, now: Long, watch: WatchStatus, tvActive: Boolean, controller: ScoreController, onNavigate: (Nav) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(sportEmoji(state.config.sport), fontSize = 22.sp)
-        Spacer(Modifier.width(6.dp))
         Column(Modifier.weight(1f)) {
             Text("SCOREUP", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, letterSpacing = 3.sp)
             val p = periodLabel(state)
@@ -236,34 +234,30 @@ fun ClockChip(state: MatchState, now: Long, onClick: () -> Unit) {
     }
 }
 
+/** One chip showing the current points per tap (default +1); tap it to change the value. */
+@Composable
+private fun TapPointsChip(state: MatchState, controller: ScoreController) {
+    var editing by remember { mutableStateOf(false) }
+    Surface(
+        onClick = { editing = true }, shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.testTag("tap_points_edit"),
+    ) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.points_per_tap), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(8.dp))
+            Text("+${state.config.tapPoints}", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary, modifier = Modifier.testTag("tap_points_value"))
+            Spacer(Modifier.width(6.dp))
+            Icon(Icons.Rounded.Edit, stringResource(R.string.edit_points), Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+    if (editing) NumberDialog(stringResource(R.string.points_per_tap), state.config.tapPoints, 1..Rules.MAX_POINTS, onDismiss = { editing = false }) {
+        controller.setTapPoints(it); editing = false
+    }
+}
+
 @Composable
 private fun TapPointsBar(state: MatchState, controller: ScoreController) {
-    var custom by remember { mutableStateOf(false) }
-    val options = (state.config.rules.pointOptions + listOf(1, 2, 3)).distinct().sorted().take(4)
-    Row(
-        Modifier.fillMaxWidth().testTag("tap_points"), horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(stringResource(R.string.points_per_tap), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(8.dp))
-        options.forEach { p ->
-            FilterChip(
-                selected = state.config.tapPoints == p, onClick = { controller.setTapPoints(p) },
-                label = { Text("+$p", fontWeight = FontWeight.Black) }, modifier = Modifier.padding(horizontal = 3.dp).testTag("tap_$p"),
-                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
-            )
-        }
-        val isCustom = state.config.tapPoints !in options
-        FilterChip(
-            selected = isCustom, onClick = { custom = true },
-            label = { Text(if (isCustom) "+${state.config.tapPoints}" else "+?", fontWeight = FontWeight.Black) },
-            modifier = Modifier.padding(horizontal = 3.dp).testTag("tap_custom"),
-            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
-        )
-    }
-    if (custom) NumberDialog(stringResource(R.string.custom_points), state.config.tapPoints, 1..Rules.MAX_POINTS, onDismiss = { custom = false }) {
-        controller.setTapPoints(it); custom = false
-    }
+    Row(Modifier.fillMaxWidth().testTag("tap_points"), horizontalArrangement = Arrangement.Center) { TapPointsChip(state, controller) }
 }
 
 @Composable
@@ -272,20 +266,7 @@ private fun CenterColumn(state: MatchState, now: Long, controller: ScoreControll
         if (state.config.rules.setBased) {
             Text(stringResource(R.string.sets_score, state.setsWon(Side.HOME), state.setsWon(Side.AWAY)), style = MaterialTheme.typography.titleMedium)
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            val options = (state.config.rules.pointOptions + listOf(1, 2, 3)).distinct().sorted().take(4)
-            options.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    row.forEach { p ->
-                        FilterChip(
-                            selected = state.config.tapPoints == p, onClick = { controller.setTapPoints(p) },
-                            label = { Text("+$p", fontWeight = FontWeight.Black) }, modifier = Modifier.testTag("tap_$p"),
-                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
-                        )
-                    }
-                }
-            }
-        }
+        TapPointsChip(state, controller)
         ControlButton(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.undo), enabled = state.canUndo, tag = "undo") { controller.undo() }
         ControlButton(if (state.clock.running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
             stringResource(if (state.clock.running) R.string.pause else R.string.start), primary = true, tag = "play") { controller.toggleClock() }

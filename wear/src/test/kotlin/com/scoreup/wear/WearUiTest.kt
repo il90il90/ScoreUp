@@ -43,21 +43,21 @@ class WearUiTest {
         rule.onNodeWithTag("watch_away").performClick()
         rule.onNodeWithTag("watch_away").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("2")
-        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("4")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("1")
+        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("2")
         assertThat(sent.filterIsInstance<SyncMessage.Events>()).hasSize(3)
         assertThat(interactions).isAtLeast(3)
     }
 
     @Test fun tapPointsChipCycles() {
         launch()
-        rule.onNodeWithTag("watch_tap_points").assertTextEquals("+2")
+        rule.onNodeWithTag("watch_tap_points").assertTextEquals("+1")
         rule.onNodeWithTag("watch_tap_points").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_tap_points").assertTextEquals("+3")
+        rule.onNodeWithTag("watch_tap_points").assertTextEquals("+2")
         rule.onNodeWithTag("watch_home").performClick()
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("3")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("2")
     }
 
     @Test fun longPressUndoesThatTeamAndUndoButtonWorks() {
@@ -67,7 +67,7 @@ class WearUiTest {
         rule.onNodeWithTag("watch_home").performTouchInput { longClick() }
         rule.waitForIdle()
         rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("0")
-        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("2")
+        rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("1")
         rule.onNodeWithTag("watch_undo").performClick()
         rule.waitForIdle()
         rule.onNodeWithTag("watch_score_away", useUnmergedTree = true).assertTextEquals("0")
@@ -84,7 +84,7 @@ class WearUiTest {
         launch()
         repeat(25) { rule.onNodeWithTag("watch_home").performClick() }
         rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("50")
+        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("25")
         assertThat(engine.activeLog.events).hasSize(25)
     }
 }
