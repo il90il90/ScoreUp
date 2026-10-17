@@ -20,4 +20,8 @@
     <string name="update_on_phone">Update ready — on your phone open ScoreUp → ⌚ → Update</string>
     <string name="made_with_love">Made with ❤️ from Israel</string>
     <string name="sync_now">Sync now</string>
+    <string name="reset_points_confirm">Reset the score?</string>
+    <string name="game_time">Game time</string>
+    <string name="count_up">Count up</string>
+    <string name="minutes_fmt">%1$d min</string>
 </resources>

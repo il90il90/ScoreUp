@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -159,7 +160,11 @@ fun ScoreboardScreen(
     }
 
     editing?.let { side ->
-        EditScoreDialog(state, side, onDismiss = { editing = null }, onSave = { controller.setScore(side, it); editing = null })
+        TeamOptionsDialog(state, side, onDismiss = { editing = null }) { name, score ->
+            controller.rename(side, name)
+            score?.let { controller.setScore(side, it) }
+            editing = null
+        }
     }
     if (confirmReset) {
         AlertDialog(
@@ -180,7 +185,11 @@ private fun TopBar(state: MatchState, now: Long, watch: WatchStatus, tvActive: B
             val p = periodLabel(state)
             if (p.isNotEmpty()) Text(p, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("period"))
         }
-        ClockChip(state, now, onClick = { controller.toggleClock() })
+        var editMinutes by remember { mutableStateOf(false) }
+        ClockChip(state, now, onClick = { controller.toggleClock() }, onLongClick = { editMinutes = true })
+        if (editMinutes) NumberDialog(stringResource(R.string.game_time_minutes), state.config.rules.periodMinutes, 0..240, onDismiss = { editMinutes = false }) {
+            controller.setGameMinutes(it); editMinutes = false
+        }
         Spacer(Modifier.width(4.dp))
         Box(contentAlignment = Alignment.TopEnd) {
             IconButton(onClick = { onNavigate(Nav.WATCH) }, modifier = Modifier.testTag("nav_watch")) {
@@ -214,14 +223,14 @@ private fun MenuItem(icon: ImageVector, text: String, tag: String, onClick: () -
 }
 
 @Composable
-fun ClockChip(state: MatchState, now: Long, onClick: () -> Unit) {
+fun ClockChip(state: MatchState, now: Long, onClick: () -> Unit, onLongClick: () -> Unit = {}) {
     val r = state.config.rules
     val running = state.clock.running
     val pulse = rememberInfiniteTransition(label = "pulse").animateFloat(1f, 0.55f, infiniteRepeatable(tween(700), RepeatMode.Reverse), label = "a")
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(14.dp),
         color = if (running) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier.testTag("clock"),
+        modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick).testTag("clock"),
     ) {
         Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(if (running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
@@ -356,8 +365,32 @@ private fun WinnerBanner(state: MatchState, controller: ScoreController, modifie
 }
 
 @Composable
-private fun EditScoreDialog(state: MatchState, side: Side, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
-    NumberDialog(stringResource(R.string.edit_score_for, teamName(state.config.team(side), side)), state.score(side), 0..9999, onDismiss, onSave)
+private fun TeamOptionsDialog(state: MatchState, side: Side, onDismiss: () -> Unit, onSave: (name: String, score: Int?) -> Unit) {
+    val team = state.config.team(side)
+    val isDefault = team.name == "HOME" || team.name == "AWAY"
+    var name by remember { mutableStateOf(if (isDefault) "" else team.name) }
+    var scoreText by remember { mutableStateOf(state.score(side).toString()) }
+    val shown = teamName(team, side)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(shown) },
+        text = {
+            Column(Modifier.width(260.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it.take(24) }, singleLine = true,
+                    label = { Text(stringResource(R.string.team_name)) }, placeholder = { Text(shown) },
+                    modifier = Modifier.testTag("team_name_field"),
+                )
+                OutlinedTextField(
+                    value = scoreText, onValueChange = { v -> scoreText = v.filter { it.isDigit() }.take(4) }, singleLine = true,
+                    label = { Text(stringResource(R.string.edit_score)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.testTag("number_input"),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(name.trim(), scoreText.toIntOrNull()) }, modifier = Modifier.testTag("number_save")) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable

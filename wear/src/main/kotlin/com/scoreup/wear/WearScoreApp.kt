@@ -114,11 +114,6 @@ fun WearScoreApp(state: MatchState, engine: ScoreEngine, haptics: Haptics, phone
 private fun ScorePage(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, onInteraction: () -> Unit) {
     val width = LocalConfiguration.current.screenWidthDp
     val unit = width / 192f
-    val focus = remember { FocusRequester() }
-    var rotaryAcc by remember { mutableStateOf(0f) }
-    val options = remember(state.config.rules) { (state.config.rules.pointOptions + listOf(1, 2, 3)).distinct().sorted() }
-
-    LaunchedEffect(Unit) { focus.requestFocus() }
 
     fun score(side: Side) {
         onInteraction()
@@ -127,23 +122,10 @@ private fun ScorePage(state: MatchState, engine: ScoreEngine, haptics: Haptics, 
         haptics.score(state.config.tapPoints)
     }
 
-    Column(
-        Modifier.fillMaxSize()
-            // Rotating the crown/bezel changes points-per-tap.
-            .onRotaryScrollEvent { e ->
-                rotaryAcc += e.verticalScrollPixels
-                if (kotlin.math.abs(rotaryAcc) > 60f) {
-                    val idx = options.indexOf(state.config.tapPoints).coerceAtLeast(0)
-                    val next = options[(idx + if (rotaryAcc > 0) 1 else options.size - 1) % options.size]
-                    engine.setTapPoints(next); haptics.tick(); onInteraction(); rotaryAcc = 0f
-                }
-                true
-            }
-            .focusRequester(focus).focusable(),
-    ) {
+    Column(Modifier.fillMaxSize()) {
         TeamHalf(state, Side.HOME, unit, top = true, onTap = { score(Side.HOME) },
             onLong = { onInteraction(); if (engine.undoLast(Side.HOME)) haptics.undo() }, modifier = Modifier.weight(1f))
-        CenterStrip(state, engine, haptics, phoneConnected, unit, options, onInteraction)
+        CenterStrip(state, engine, haptics, phoneConnected, unit, onInteraction)
         TeamHalf(state, Side.AWAY, unit, top = false, onTap = { score(Side.AWAY) },
             onLong = { onInteraction(); if (engine.undoLast(Side.AWAY)) haptics.undo() }, modifier = Modifier.weight(1f))
     }
@@ -192,25 +174,39 @@ private fun ScoreText(score: Int, color: Color, unit: Float, scale: Float, side:
 }
 
 @Composable
-private fun CenterStrip(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, unit: Float, options: List<Int>, onInteraction: () -> Unit) {
+private fun CenterStrip(state: MatchState, engine: ScoreEngine, haptics: Haptics, phoneConnected: Boolean, unit: Float, onInteraction: () -> Unit) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(state.clock.running) { now = System.currentTimeMillis(); while (state.clock.running) { delay(250); now = System.currentTimeMillis() } }
+    var wallNow by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) { while (true) { wallNow = System.currentTimeMillis(); delay(1000) } }
     var buzzed by remember(state.period) { mutableStateOf(false) }
     LaunchedEffect(now) { if (state.clock.running && state.periodExpired(now) && !buzzed) { buzzed = true; haptics.buzzer() } }
+
+    var showGameTime by remember { mutableStateOf(false) }
+    var confirmReset by remember { mutableStateOf(false) }
+    val period = periodShort(state)
 
     Row(
         Modifier.fillMaxWidth().height((38 * unit).dp).background(Color.Black).padding(horizontal = (22 * unit).dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        // Undo: tap = undo one point; long-press = reset the match (with confirmation).
         Box(
             Modifier.size((30 * unit).dp).clip(CircleShape).background(Color(0xFF1A2240))
-                .combinedClickable(onClick = { onInteraction(); if (engine.undo()) haptics.undo() }).testTag("watch_undo"),
+                .combinedClickable(
+                    onClick = { onInteraction(); if (engine.undo()) haptics.undo() },
+                    onLongClick = { onInteraction(); haptics.tick(); confirmReset = true },
+                ).testTag("watch_undo"),
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.undo), Modifier.size((18 * unit).dp), tint = Color.White) }
 
+        // Clock: tap = start/pause; long-press = choose game time.
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.combinedClickable(onClick = { onInteraction(); engine.toggleClock(); haptics.tick() }).testTag("watch_clock"),
+            modifier = Modifier.combinedClickable(
+                onClick = { onInteraction(); engine.toggleClock(); haptics.tick() },
+                onLongClick = { onInteraction(); haptics.tick(); showGameTime = true },
+            ).testTag("watch_clock"),
         ) {
             val showClock = state.config.rules.periodMinutes > 0 || state.clock.running || state.clock.accumulatedMs > 0
             if (showClock) {
@@ -220,21 +216,50 @@ private fun CenterStrip(state: MatchState, engine: ScoreEngine, haptics: Haptics
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size((6 * unit).dp).clip(CircleShape).background(if (phoneConnected) Color(0xFF00E58F) else Color(0xFF59607A)))
                 Spacer(Modifier.width(3.dp))
-                Text(periodShort(state), fontSize = (10 * unit).sp, color = Color(0xFFB4BCD6), fontWeight = FontWeight.Bold)
+                // Period label for sports with periods; otherwise the current time of day (with seconds).
+                Text(period.ifEmpty { wallClock(wallNow) }, fontFamily = FontFamily.Monospace, fontSize = (10 * unit).sp, color = Color(0xFFB4BCD6), fontWeight = FontWeight.Bold)
             }
         }
 
-        Box(
-            Modifier.clip(CircleShape).background(Color(0xFFFFD60A))
-                .combinedClickable(onClick = {
-                    onInteraction()
-                    val idx = options.indexOf(state.config.tapPoints)
-                    engine.setTapPoints(options[(idx + 1).mod(options.size)]); haptics.tick()
-                })
-                .padding(horizontal = (8 * unit).dp, vertical = (3 * unit).dp).testTag("watch_tap_points"),
-            contentAlignment = Alignment.Center,
-        ) { Text("+${state.config.tapPoints}", color = Color.Black, fontWeight = FontWeight.Black, fontSize = (14 * unit).sp) }
+        // Spacer keeps the clock centred now that the points chip is gone (points are set on the phone).
+        Box(Modifier.size((30 * unit).dp))
     }
+
+    if (showGameTime) GameTimeDialog(state.config.rules.periodMinutes, onDismiss = { showGameTime = false }) { m ->
+        onInteraction(); engine.setGameMinutes(m); haptics.tick(); showGameTime = false
+    }
+    Dialog(showDialog = confirmReset, onDismissRequest = { confirmReset = false }) {
+        Alert(
+            title = { Text(stringResource(R.string.reset_points_confirm), textAlign = TextAlign.Center) },
+            negativeButton = { androidx.wear.compose.material.Button(onClick = { confirmReset = false }, colors = androidx.wear.compose.material.ButtonDefaults.secondaryButtonColors()) { Text("✕") } },
+            positiveButton = { androidx.wear.compose.material.Button(onClick = { onInteraction(); engine.resetMatch(); haptics.tick(); confirmReset = false }) { Text("✓") } },
+        )
+    }
+}
+
+/** Game-time picker on the watch: minute stepper, 0 = count up (no limit). */
+@Composable
+private fun GameTimeDialog(current: Int, onDismiss: () -> Unit, onPick: (Int) -> Unit) {
+    var minutes by remember { mutableStateOf(current.coerceIn(0, 180)) }
+    Dialog(showDialog = true, onDismissRequest = onDismiss) {
+        Alert(
+            title = { Text(stringResource(R.string.game_time), textAlign = TextAlign.Center) },
+            negativeButton = { androidx.wear.compose.material.Button(onClick = onDismiss, colors = androidx.wear.compose.material.ButtonDefaults.secondaryButtonColors()) { Text("✕") } },
+            positiveButton = { androidx.wear.compose.material.Button(onClick = { onPick(minutes) }) { Text("✓") } },
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                CompactChip(onClick = { minutes = (minutes - 1).coerceAtLeast(0) }, label = { Text("−", fontSize = 18.sp) }, colors = ChipDefaults.secondaryChipColors())
+                Text(if (minutes == 0) stringResource(R.string.count_up) else stringResource(R.string.minutes_fmt, minutes),
+                    modifier = Modifier.padding(horizontal = 10.dp), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                CompactChip(onClick = { minutes = (minutes + 1).coerceAtMost(180) }, label = { Text("+", fontSize = 18.sp) }, colors = ChipDefaults.secondaryChipColors())
+            }
+        }
+    }
+}
+
+private fun wallClock(ms: Long): String {
+    val c = java.util.Calendar.getInstance().apply { timeInMillis = ms }
+    return "%02d:%02d:%02d".format(c.get(java.util.Calendar.HOUR_OF_DAY), c.get(java.util.Calendar.MINUTE), c.get(java.util.Calendar.SECOND))
 }
 
 @Composable
@@ -246,7 +271,7 @@ private fun periodShort(s: MatchState): String {
         r.periods == 4 -> "Q${s.period}"
         r.periods == 2 -> stringResource(R.string.half_short, s.period)
         r.periods > 0 -> "P${s.period}"
-        else -> "SCOREUP"
+        else -> ""
     }
 }
 
@@ -288,18 +313,6 @@ private fun ControlsPage(state: MatchState, engine: ScoreEngine, haptics: Haptic
                 enabled = state.canUndo, onClick = { onInteraction(); if (engine.undo()) haptics.undo() }, modifier = Modifier.fillMaxWidth(),
                 colors = ChipDefaults.secondaryChipColors(),
             )
-        }
-        item { ListHeader { Text(stringResource(R.string.points_per_tap)) } }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                (state.config.rules.pointOptions + listOf(1, 2, 3)).distinct().sorted().take(4).forEach { p ->
-                    CompactChip(
-                        label = { Text("+$p", fontWeight = FontWeight.Black) },
-                        onClick = { onInteraction(); engine.setTapPoints(p); haptics.tick() },
-                        colors = if (state.config.tapPoints == p) ChipDefaults.primaryChipColors() else ChipDefaults.secondaryChipColors(),
-                    )
-                }
-            }
         }
         item {
             Chip(

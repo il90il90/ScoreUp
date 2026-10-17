@@ -62,12 +62,14 @@ class PhoneUiTest {
         assertThat(app.runtime.engine.state.value.config.tapPoints).isEqualTo(3)
     }
 
-    @Test fun longPressEditsScore() {
+    @Test fun longPressOpensTeamOptionsAndEditsScore() {
         rule.onNodeWithTag("team_home").performTouchInput { longClick() }
         rule.onNodeWithTag("number_input").performTextReplacement("42")
+        rule.onNodeWithTag("team_name_field").performTextReplacement("Lions")
         rule.onNodeWithTag("number_save").performClick()
         rule.waitForIdle()
         score("home").assertTextEquals("42")
+        rule.onNodeWithTag("name_home", useUnmergedTree = true).assertTextEquals("LIONS")
     }
 
     @Test fun resetSavesHistory() {

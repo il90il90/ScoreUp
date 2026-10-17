@@ -49,17 +49,6 @@ class WearUiTest {
         assertThat(interactions).isAtLeast(3)
     }
 
-    @Test fun tapPointsChipCycles() {
-        launch()
-        rule.onNodeWithTag("watch_tap_points").assertTextEquals("+1")
-        rule.onNodeWithTag("watch_tap_points").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithTag("watch_tap_points").assertTextEquals("+2")
-        rule.onNodeWithTag("watch_home").performClick()
-        rule.waitForIdle()
-        rule.onNodeWithTag("watch_score_home", useUnmergedTree = true).assertTextEquals("2")
-    }
-
     @Test fun longPressUndoesThatTeamAndUndoButtonWorks() {
         launch()
         rule.onNodeWithTag("watch_home").performClick()

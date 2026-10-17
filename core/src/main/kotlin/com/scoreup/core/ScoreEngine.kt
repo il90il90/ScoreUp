@@ -62,6 +62,13 @@ class ScoreEngine(
     fun renameTeam(side: Side, name: String) = record(Payload.TeamUpdated(side, name = name.trim().take(TeamInfo.MAX_NAME)))
     fun setTeamColor(side: Side, color: Long) = record(Payload.TeamUpdated(side, color = color))
     fun setTapPoints(points: Int) = record(Payload.TapPointsUpdated(points.coerceIn(1, Rules.MAX_POINTS)))
+
+    /** Sets the game-clock duration. minutes>0 counts down from it; 0 = no limit (count up). */
+    fun setGameMinutes(minutes: Int) {
+        val m = minutes.coerceIn(0, 240)
+        val c = state.value.config
+        updateConfig(c.copy(rules = c.rules.copy(periodMinutes = m, clockCountsDown = m > 0)))
+    }
     fun updateConfig(config: MatchConfig) = record(Payload.ConfigUpdated(config))
     fun startClock() = record(Payload.ClockStarted)
     fun pauseClock() = record(Payload.ClockPaused)

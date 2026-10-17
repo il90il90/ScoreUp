@@ -64,13 +64,18 @@ fun CastScreen(
             }
 
             OptionCard(Icons.Rounded.Fullscreen, stringResource(R.string.cast_option_mirror), stringResource(R.string.cast_option_mirror_body)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onOpenTvMode, modifier = Modifier.fillMaxWidth().testTag("open_tv_mode")) {
+                        Icon(Icons.Rounded.Fullscreen, null); Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.open_tv_mode), maxLines = 1)
+                    }
                     OutlinedButton(onClick = {
                         // Not every OEM exposes the cast settings screen; fall back to display settings.
                         val intents = listOf(Intent(Settings.ACTION_CAST_SETTINGS), Intent(Settings.ACTION_DISPLAY_SETTINGS))
                         intents.firstOrNull { runCatching { context.startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess }
-                    }) { Icon(Icons.Rounded.Cast, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.open_cast_settings)) }
-                    Button(onClick = onOpenTvMode, modifier = Modifier.testTag("open_tv_mode")) { Text(stringResource(R.string.open_tv_mode)) }
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Rounded.Cast, null); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.open_cast_settings), maxLines = 1)
+                    }
                 }
             }
 

@@ -179,4 +179,5 @@
     <string name="sync_stats">Devices %1$d · ScoreUp %2$d · sent %3$d / received %4$d · state %5$d / %6$d</string>
     <string name="sync_last_received">Last update from watch: %1$s</string>
     <string name="edit_points">Change points per tap</string>
+    <string name="game_time_minutes">Game time (minutes · 0 = count up)</string>
 </resources>

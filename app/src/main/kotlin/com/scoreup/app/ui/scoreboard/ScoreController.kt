@@ -19,6 +19,8 @@ class ScoreController(val engine: ScoreEngine, private val feedback: Feedback) {
     fun resetClock() { engine.resetClock(); feedback.tick() }
     fun nextPeriod() { engine.nextPeriod(); feedback.tick() }
     fun setTapPoints(p: Int) { engine.setTapPoints(p); feedback.tick() }
+    fun setGameMinutes(m: Int) { engine.setGameMinutes(m); feedback.tick() }
+    fun rename(side: Side, name: String) { engine.renameTeam(side, name); feedback.tick() }
     fun reset() { engine.resetMatch(); feedback.tick() }
     fun newMatch(config: MatchConfig) { engine.newMatch(config); feedback.tick() }
     fun finish() { engine.finish(); feedback.win() }

@@ -19,4 +19,8 @@
     <string name="update_on_phone">יש עדכון — בטלפון פתחו ScoreUp ← ⌚ ← עדכן</string>
     <string name="made_with_love">נוצר עם ❤️ מישראל</string>
     <string name="sync_now">סנכרן עכשיו</string>
+    <string name="reset_points_confirm">לאפס את התוצאה?</string>
+    <string name="game_time">זמן משחק</string>
+    <string name="count_up">ספירה עולה</string>
+    <string name="minutes_fmt">%1$d דק׳</string>
 </resources>
