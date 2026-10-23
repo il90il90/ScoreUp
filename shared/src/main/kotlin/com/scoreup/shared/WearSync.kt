@@ -14,6 +14,7 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
+import com.scoreup.core.HeartTracker
 import com.scoreup.core.ScoreEngine
 import com.scoreup.core.SyncCodec
 import com.scoreup.core.SyncMessage
@@ -49,6 +50,9 @@ class WearSync(
 ) {
     data class Peer(val id: String, val name: String, val nearby: Boolean, val appVersionCode: Long? = null)
 
+    /** One heart-rate reading in beats per minute, stamped when it was measured or received. */
+    data class HeartReading(val bpm: Int, val atMs: Long)
+
     /** Live sync health, shown on the phone's ⌚ screen and the watch's controls page. */
     data class Diagnostics(
         val connectedNodes: Int = 0,
@@ -83,6 +87,11 @@ class WearSync(
 
     private val _diagnostics = MutableStateFlow(Diagnostics())
     val diagnostics: StateFlow<Diagnostics> = _diagnostics.asStateFlow()
+
+    private val _heartRate = MutableStateFlow<HeartReading?>(null)
+    /** Latest heart rate measured by the peer watch (the watch stops sending when its app closes). */
+    val heartRate: StateFlow<HeartReading?> = _heartRate.asStateFlow()
+    private var lastHeartSent: HeartReading? = null
 
     private var jobs = emptyList<Job>()
     private val peerVersions = HashMap<String, Long>()
@@ -136,6 +145,11 @@ class WearSync(
 
     /** Entry point for messages (also from the WearableListenerService while the UI is closed). */
     fun onMessage(event: MessageEvent) {
+        if (event.path == HEART_PATH) {
+            event.data.decodeToString().toIntOrNull()?.takeIf { it in HeartTracker.MIN_BPM..HeartTracker.MAX_BPM }
+                ?.let { _heartRate.value = HeartReading(it, System.currentTimeMillis()) }
+            return
+        }
         if (event.path != PATH) return
         val msg = SyncCodec.decode(event.data) ?: return note("Unreadable message from ${event.sourceNodeId}")
         if (msg is SyncMessage.Summary) {
@@ -197,6 +211,21 @@ class WearSync(
         }
     }
 
+    /**
+     * Shares the wearer's heart rate with the phone: on a change (at most every 2 s) and as a
+     * keep-alive every 10 s. Ephemeral, so it bypasses the event log and the DataItem channel.
+     */
+    fun sendHeartRate(bpm: Int) {
+        val now = System.currentTimeMillis()
+        val last = lastHeartSent
+        if (last != null && now - last.atMs < if (bpm == last.bpm) 10_000 else 2_000) return
+        lastHeartSent = HeartReading(bpm, now)
+        val targets = (_peers.value + _connectedDevices.value).distinctBy { it.id }
+        if (targets.isEmpty()) return
+        val bytes = bpm.toString().encodeToByteArray()
+        scope.launch { for (node in targets) runCatching { messageClient.sendMessage(node.id, HEART_PATH, bytes).await() } }
+    }
+
     /** Publishes this device's full active match log (bounded) as an urgent DataItem. */
     private suspend fun publishState() {
         val log = engine.activeLog
@@ -244,6 +273,7 @@ class WearSync(
 
     companion object {
         const val PATH = "/scoreup/sync/v1"
+        const val HEART_PATH = "/scoreup/heart/v1"
         const val STATE_PREFIX = "/scoreup/state/"
         const val CAPABILITY = "scoreup_sync"
         private const val MAX_ITEM_BYTES = 90_000

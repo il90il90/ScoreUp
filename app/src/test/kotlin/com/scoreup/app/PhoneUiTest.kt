@@ -84,6 +84,21 @@ class PhoneUiTest {
         rule.onAllNodesWithTag("history_item")[0].assertIsDisplayed()
     }
 
+    @Test fun saveScoreFromMenuKeepsTheMatchGoing() {
+        rule.onNodeWithTag("team_home").performClick()
+        rule.onNodeWithTag("menu").performClick()
+        rule.onNodeWithTag("menu_save").performClick()
+        rule.waitForIdle()
+        assertThat(app.history.items.value.single().homeScore).isEqualTo(1)
+        score("home").assertTextEquals("1")
+        // Saving again updates the same entry instead of adding a duplicate.
+        rule.onNodeWithTag("team_home").performClick()
+        rule.onNodeWithTag("menu").performClick()
+        rule.onNodeWithTag("menu_save").performClick()
+        rule.waitForIdle()
+        assertThat(app.history.items.value.single().homeScore).isEqualTo(2)
+    }
+
     @Test fun setupStartsVolleyballWithCustomTeam() {
         rule.onNodeWithTag("menu").performClick()
         rule.onNodeWithTag("menu_setup").performClick()

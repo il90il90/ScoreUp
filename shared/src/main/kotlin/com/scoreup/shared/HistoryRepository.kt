@@ -1,4 +1,4 @@
-package com.scoreup.app.data
+package com.scoreup.shared
 
 import android.util.AtomicFile
 import com.scoreup.core.HistoryMerge
@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.builtins.ListSerializer
 import java.io.File
 
-/** Locally saved match history (newest first), persisted atomically as JSON. */
+/** Locally saved match history / saved scores (newest first), persisted atomically as JSON. Used by phone and watch. */
 class HistoryRepository(dir: File) {
     private val file = AtomicFile(File(dir, "history.json"))
     private val serializer = ListSerializer(MatchSummary.serializer())

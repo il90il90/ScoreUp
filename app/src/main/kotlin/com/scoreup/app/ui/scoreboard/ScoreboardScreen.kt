@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SportsScore
@@ -81,6 +82,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.scoreup.app.R
+import com.scoreup.app.ui.common.HeartBadge
 import com.scoreup.app.ui.common.formatClock
 import com.scoreup.app.ui.common.periodLabel
 import com.scoreup.app.ui.common.teamName
@@ -103,6 +105,8 @@ fun ScoreboardScreen(
     watch: WatchStatus,
     tvActive: Boolean,
     watchUpdateAvailable: Boolean = false,
+    heartRate: Int? = null,
+    onSaveScore: () -> Unit = {},
     onNavigate: (Nav) -> Unit,
 ) {
     // A ticking clock only while the game clock runs (no wasted recompositions otherwise).
@@ -125,7 +129,7 @@ fun ScoreboardScreen(
         val landscape = maxWidth > maxHeight
         val wide = maxWidth >= 840.dp
         Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            TopBar(state, now, watch, tvActive, controller, onNavigate)
+            TopBar(state, now, watch, tvActive, heartRate, controller, onSaveScore, onNavigate)
             if (watchUpdateAvailable) {
                 Surface(
                     onClick = { onNavigate(Nav.WATCH) }, shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primary,
@@ -178,12 +182,21 @@ fun ScoreboardScreen(
 }
 
 @Composable
-private fun TopBar(state: MatchState, now: Long, watch: WatchStatus, tvActive: Boolean, controller: ScoreController, onNavigate: (Nav) -> Unit) {
+private fun TopBar(
+    state: MatchState, now: Long, watch: WatchStatus, tvActive: Boolean, heartRate: Int?,
+    controller: ScoreController, onSaveScore: () -> Unit, onNavigate: (Nav) -> Unit,
+) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("SCOREUP", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, letterSpacing = 3.sp)
+            Text("SCOREUP", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, letterSpacing = 3.sp, maxLines = 1)
             val p = periodLabel(state)
-            if (p.isNotEmpty()) Text(p, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("period"))
+            if (p.isNotEmpty() || heartRate != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                if (p.isNotEmpty()) Text(p, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1,
+                    modifier = Modifier.testTag("period"))
+                if (p.isNotEmpty() && heartRate != null) Spacer(Modifier.width(10.dp))
+                // Live heart rate of whoever wears the watch.
+                if (heartRate != null) HeartBadge(heartRate, 16.sp, Modifier.testTag("heart_rate"), color = MaterialTheme.colorScheme.onBackground)
+            }
         }
         var editMinutes by remember { mutableStateOf(false) }
         ClockChip(state, now, onClick = { controller.toggleClock() }, onLongClick = { editMinutes = true })
@@ -205,6 +218,7 @@ private fun TopBar(state: MatchState, now: Long, watch: WatchStatus, tvActive: B
             IconButton(onClick = { menu = true }, modifier = Modifier.testTag("menu")) { Icon(Icons.Rounded.MoreVert, stringResource(R.string.menu)) }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 MenuItem(Icons.Rounded.Tune, stringResource(R.string.setup_title), "menu_setup") { menu = false; onNavigate(Nav.SETUP) }
+                MenuItem(Icons.Rounded.Save, stringResource(R.string.save_score), "menu_save") { menu = false; onSaveScore() }
                 MenuItem(Icons.Rounded.History, stringResource(R.string.history), "menu_history") { menu = false; onNavigate(Nav.HISTORY) }
                 MenuItem(Icons.Rounded.Watch, stringResource(R.string.installer_title), "menu_watch") { menu = false; onNavigate(Nav.WATCH) }
                 MenuItem(Icons.Rounded.Tv, stringResource(R.string.cast_title), "menu_tv") { menu = false; onNavigate(Nav.TV) }
@@ -273,7 +287,8 @@ private fun TapPointsBar(state: MatchState, controller: ScoreController) {
 private fun CenterColumn(state: MatchState, now: Long, controller: ScoreController, onReset: () -> Unit, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
         if (state.config.rules.setBased) {
-            Text(stringResource(R.string.sets_score, state.setsWon(Side.HOME), state.setsWon(Side.AWAY)), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.sets_score, state.setsWon(Side.HOME), state.setsWon(Side.AWAY)), style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground)
         }
         TapPointsChip(state, controller)
         ControlButton(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.undo), enabled = state.canUndo, tag = "undo") { controller.undo() }

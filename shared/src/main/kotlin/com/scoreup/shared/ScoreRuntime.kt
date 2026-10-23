@@ -3,6 +3,7 @@ package com.scoreup.shared
 import android.content.Context
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import com.scoreup.core.MatchState
 import com.scoreup.core.ScoreEngine
 import java.io.File
 
@@ -15,10 +16,15 @@ class ScoreRuntime private constructor(context: Context, role: String, versionCo
     companion object {
         @Volatile private var instance: ScoreRuntime? = null
 
-        fun init(context: Context, role: String, versionCode: Long): ScoreRuntime =
-            instance ?: synchronized(this) {
-                instance ?: ScoreRuntime(context.applicationContext, role, versionCode).also { instance = it; it.sync.start() }
-            }
+        /** [onArchive] is installed before sync starts, so a match replaced by the very first sync is still saved. */
+        fun init(context: Context, role: String, versionCode: Long, onArchive: (MatchState) -> Unit = {}): ScoreRuntime =
+            (instance ?: synchronized(this) {
+                instance ?: ScoreRuntime(context.applicationContext, role, versionCode).also {
+                    it.engine.onArchive = onArchive
+                    instance = it
+                    it.sync.start()
+                }
+            }).also { it.engine.onArchive = onArchive }
 
         fun get(): ScoreRuntime = checkNotNull(instance) { "ScoreRuntime.init not called" }
 

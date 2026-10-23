@@ -17,6 +17,8 @@ data class MatchSummary(
     val periods: Int = 1,
     val finished: Boolean = false,
     val pointsLog: List<ScoringEntry> = emptyList(),
+    /** Wearer's heart rate during the match, when the watch measured it. */
+    val heart: HeartStats? = null,
 ) {
     val winner: Side?
         get() = if (sets.isNotEmpty()) {
@@ -25,9 +27,9 @@ data class MatchSummary(
         } else if (homeScore > awayScore) Side.HOME else if (awayScore > homeScore) Side.AWAY else null
 
     companion object {
-        fun of(s: MatchState, endedAtMs: Long) = MatchSummary(
+        fun of(s: MatchState, endedAtMs: Long, heart: HeartStats? = null) = MatchSummary(
             s.matchId, s.createdAtMs.takeIf { it > 0 } ?: s.feed.firstOrNull()?.wallMs ?: endedAtMs, endedAtMs, s.config.sport, s.config.home, s.config.away,
-            s.home, s.away, s.sets, s.period, s.finished, s.feed.takeLast(500),
+            s.home, s.away, s.sets, s.period, s.finished, s.feed.takeLast(500), heart,
         )
     }
 }

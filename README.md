@@ -2,7 +2,7 @@
 
 A sports scoreboard for Android phones, tablets and foldables, with a **Wear OS watch as the scoring remote** and a live **TV scoreboard**.
 
-> **Build status: NOT YET COMPILED for Android.** The pure-Kotlin engine (`:core`) and the Wireless-ADB client (`:adb`) build and pass 45 JVM tests. The Android modules (`:shared`, `:app`, `:wear`) are written but have **not been compiled or run**. The development sandbox can't reach Google's Maven repository (`dl.google.com`), and GitHub Actions minutes are used up. See [Status & limitations](#status--limitations).
+> Releases are built, tested (JVM + Robolectric) and signed by the GitHub Actions **Release** workflow, and the phone app updates itself from this repo's releases. See [Status & limitations](#status--limitations).
 
 ## Features
 
@@ -12,13 +12,14 @@ A sports scoreboard for Android phones, tablets and foldables, with a **Wear OS 
 | Points per tap | +1 / +2 / +3 / custom (1–100), shared live with the watch. Each sport has its own defaults (basketball defaults to +2). |
 | Sports | Basketball (4×10′ countdown), Soccer (2×45′ count-up), Volleyball (sets to 25 / 15, win by 2, best of 5), Generic. All rules are editable. |
 | Game control | Start / pause / reset clock, next period / end set, undo (any device), manual edit, finish / reopen, reset (archives to history), new match. |
-| Watch remote | Two huge half-screen buttons on a round screen. Center strip: undo, clock (tap to start/pause), `+N` chip (tap to cycle). The crown/bezel changes points per tap. Long-press a half to undo that team. Swipe for controls. Distinct haptics per point value. Works offline. |
+| Watch remote | Two huge half-screen buttons on a round screen. Center strip: undo, the game clock (tap to start/pause, long-press to set the game time) over the time of day and live heart rate, and **restart** (asks first, then saves the score and starts over). Long-press a half to undo that team. Swipe for controls (save score, clock, reset clock, next period, heart rate on/off, sync) and for **saved scores**. Distinct haptics per point value. Works offline. |
+| Heart rate | While ScoreUp is open the watch reads the wearer's heart rate (it asks for sensor access once; can be turned off in the watch controls). It shows on the watch, on the phone's scoreboard and on the TV, and every score saved on the watch keeps the average and peak. |
 | Real-time sync | Event-sourced CRDT over the Wear Data Layer: no lost points, no double counting, offline scoring on both sides, auto-reconnect. See [docs/SYNC.md](docs/SYNC.md). |
 | Watch install without Play | The phone app contains the watch APK and installs or updates it over **Wireless debugging**. It pairs with a 6-digit code, finds the watch on the network automatically, streams the install with progress, then launches the app. No computer needed. |
-| TV | (1) An external display (HDMI / USB-C / wireless display that offers a second screen) automatically shows a full-screen arena scoreboard. (2) Cast screen + **TV mode**, which works with any Chromecast or Google TV. (3) A native **Google Cast** custom receiver (`cast-receiver/index.html`); this needs a Cast App ID. |
+| TV | Arena-style board: each score is sized to fill its team panel, with the period and game clock, the time of day and the watch's heart rate along the top. (1) An external display (HDMI / USB-C / wireless display that offers a second screen) automatically shows it full screen. (2) Cast screen + **TV mode**, which works with any Chromecast or Google TV. (3) A native **Google Cast** custom receiver (`cast-receiver/index.html`); this needs a Cast App ID. |
 | Layouts | Portrait (stacked), landscape (side-by-side + center controls), tablets/foldables ≥ 840dp (adds a recent-plays panel). |
 | Languages | English and Hebrew, full RTL. Follows the system language or can be set in Settings. |
-| History | Every reset / new match is saved locally with final score, sets, duration and play log. Rematch in one tap. |
+| History / saved scores | Every reset / restart / new match is saved, on the phone and on the watch, with final score, sets, duration and play log. **Save score** (phone menu, watch controls) saves the current score at any time; saving the same match again updates its entry. Rematch in one tap. |
 | Design | Dark arcade theme by default (light/system optional), bold tabular digits, bump/slide score animations. |
 
 ## Install
@@ -60,9 +61,10 @@ Sandboxed machines without Google Maven can use an offline mirror: `scripts/buil
 core/    pure Kotlin: Model, MatchEvent, MatchReducer (deterministic fold), MatchLog (CRDT),
          ScoreEngine (persist → broadcast), SyncProtocol, History
 adb/     pure Kotlin: SPAKE2 (BoringSSL-compatible) pairing, TLS/STLS, ADB transport, streamed install
-shared/  Android lib: FileSessionStore (AtomicFile), WearSync (MessageClient + CapabilityClient), ScoreRuntime
+shared/  Android lib: FileSessionStore (AtomicFile), WearSync (MessageClient + CapabilityClient, heart-rate relay),
+         ScoreRuntime, HistoryRepository
 app/     phone: Compose UI, history, settings, installer (NSD + :adb), TV (Presentation, Cast sender)
-wear/    watch: Wear Compose UI, haptics, rotary input
+wear/    watch: Wear Compose UI, haptics, heart-rate sensor, saved scores
 cast-receiver/  Google Cast web receiver
 ```
 
@@ -70,17 +72,17 @@ cast-receiver/  Google Cast web receiver
 
 | Suite | Where | Status |
 | --- | --- | --- |
-| Engine: reducer, sports rules, undo, persistence, history | `core/src/test` (17 + 2) | ✅ passing |
+| Engine: reducer, sports rules, undo, persistence, history, heart-rate stats | `core/src/test` | ✅ passing |
 | Sync: duplicates, drops, reordering, offline merge, concurrent undo, new-match handover, 30-seed chaos | `core/src/test/SyncTest` (10) | ✅ passing |
 | ADB: RFC 8032 / RFC 5869 vectors, BoringSSL SPAKE2 constants, pairing + TLS install against a fake adbd, wrong code, unpaired rejection, legacy AUTH | `adb/src/test` (16) | ✅ passing |
-| Phone UI (Robolectric + Compose): scoring, points/tap, undo, edit, reset→history, setup, clock, winner, TV mode, installer; landscape, tablet, Hebrew RTL; Cast payload | `app/src/test` | ⚠️ written, not yet run |
-| Watch UI (Robolectric, round screen): big buttons, chip cycling, long-press undo, clock, 25 rapid taps | `wear/src/test` | ⚠️ written, not yet run |
-| Persistence (Robolectric) | `shared/src/test` | ⚠️ written, not yet run |
+| Phone UI (Robolectric + Compose): scoring, points/tap, undo, edit, reset→history, save score, setup, clock, winner, TV mode, installer; landscape, tablet, Hebrew RTL; Cast payload; TV board (scores fill the panels, heart rate, time) | `app/src/test` | ✅ passing |
+| Watch UI (Robolectric, round screen): big buttons, long-press undo, clock, restart → saved, time + heart rate, save score, saved scores page, 25 rapid taps | `wear/src/test` | ✅ passing |
+| Persistence (Robolectric) | `shared/src/test` | ✅ passing |
 | Emulator E2E: rotation/recreation persistence, 40 rapid taps, TV mode; Wear emulator scoring | `*/src/androidTest`, `.github/workflows/android-ci.yml` | ⚠️ written, not yet run |
 
 ## Status & limitations
 
-- **Not compiled yet:** the Android modules have never been compiled. Expect a round of compile fixes before the first APK.
+- **Heart rate** uses the watch's standard heart-rate sensor (`BODY_SENSORS`). It is covered by JVM/Robolectric tests, not yet by a test on a real watch.
 - **Watch installer** is checked against a protocol-faithful fake `adbd` only. It has not been tried on a real watch.
 - **Phone⇄watch sync** in a real paired phone + watch setup has not been tested yet. The protocol itself is covered by the JVM tests.
 - **Native Cast** needs a registered App ID, which is Google policy for custom receivers.

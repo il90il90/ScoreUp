@@ -8,8 +8,6 @@
     <string name="pause">Pause clock</string>
     <string name="next_period">Next period</string>
     <string name="end_set">End set</string>
-    <string name="new_match">New match</string>
-    <string name="new_match_confirm">Start a new match?</string>
     <string name="points_per_tap">Points per tap</string>
     <string name="controls">Controls</string>
     <string name="phone_connected">Phone connected · synced</string>
@@ -20,8 +18,22 @@
     <string name="update_on_phone">Update ready — on your phone open ScoreUp → ⌚ → Update</string>
     <string name="made_with_love">Made with ❤️ from Israel</string>
     <string name="sync_now">Sync now</string>
-    <string name="reset_points_confirm">Reset the score?</string>
     <string name="game_time">Game time</string>
     <string name="count_up">Count up</string>
     <string name="minutes_fmt">%1$d min</string>
+    <string name="restart">Restart</string>
+    <string name="restart_confirm">Save the score and start over?</string>
+    <string name="save_score">Save score</string>
+    <string name="saved">Saved</string>
+    <string name="saved_scores">Saved scores</string>
+    <string name="no_saved_scores">No saved scores yet. A score is saved when you restart or tap Save score.</string>
+    <string name="clear_saved">Clear all</string>
+    <string name="clear_saved_confirm">Delete all saved scores?</string>
+    <string name="reset_clock">Reset clock</string>
+    <string name="heart_rate">Heart rate</string>
+    <string name="heart_bpm">%1$d bpm</string>
+    <string name="heart_measuring">Measuring…</string>
+    <string name="heart_allow">Allow sensor access</string>
+    <string name="heart_avg_max">avg %1$d · max %2$d</string>
+    <string name="off">Off</string>
 </resources>

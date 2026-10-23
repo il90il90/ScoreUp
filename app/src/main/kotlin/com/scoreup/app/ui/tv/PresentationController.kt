@@ -13,9 +13,11 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.scoreup.app.ui.common.rememberWatchHeartRate
 import com.scoreup.app.ui.theme.ScoreUpTheme
 import com.scoreup.app.data.ThemeMode
 import com.scoreup.core.MatchState
+import com.scoreup.shared.WearSync
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +27,11 @@ import kotlinx.coroutines.flow.asStateFlow
  * emulator's simulated secondary display) while the phone keeps the controls. Bound to the
  * activity lifecycle: start in onStart, stop in onStop.
  */
-class PresentationController(private val activity: ComponentActivity, private val state: StateFlow<MatchState>) {
+class PresentationController(
+    private val activity: ComponentActivity,
+    private val state: StateFlow<MatchState>,
+    private val heart: StateFlow<WearSync.HeartReading?>,
+) {
     private val displayManager = activity.getSystemService(DisplayManager::class.java)
     private var presentation: Presentation? = null
     private val _activeDisplay = MutableStateFlow<String?>(null)
@@ -56,7 +62,7 @@ class PresentationController(private val activity: ComponentActivity, private va
     }
 
     private fun show(display: Display) {
-        val p = ScorePresentation(activity, display, state)
+        val p = ScorePresentation(activity, display, state, heart)
         runCatching { p.show() }.onSuccess {
             presentation = p
             _activeDisplay.value = display.name
@@ -74,6 +80,7 @@ private class ScorePresentation(
     private val owner: ComponentActivity,
     display: Display,
     private val state: StateFlow<MatchState>,
+    private val heart: StateFlow<WearSync.HeartReading?>,
 ) : Presentation(owner as Context, display) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +88,8 @@ private class ScorePresentation(
         val view = ComposeView(context).apply {
             setContent {
                 val s by state.collectAsState()
-                ScoreUpTheme(ThemeMode.DARK) { TvScoreboard(s) }
+                val bpm = rememberWatchHeartRate(heart)
+                ScoreUpTheme(ThemeMode.DARK) { TvScoreboard(s, heartRate = bpm) }
             }
         }
         // Compose needs lifecycle owners on the window's view tree (a Presentation is a Dialog).

@@ -1,7 +1,8 @@
 name: Release
 
-# Every push to main builds signed phone + watch APKs and publishes a GitHub Release
-# (tag v<versionName>, versionName = <VERSION_MAJOR_MINOR>.<commit count>). Skips if the tag exists.
+# Every push to main (or a manual run on any branch) builds signed phone + watch APKs and publishes
+# a GitHub Release tagged on the built commit (tag v<versionName>, versionName =
+# <VERSION_MAJOR_MINOR>.<commit count>). Skips if the tag exists.
 on:
   push:
     branches: [main]
@@ -60,4 +61,4 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk "ScoreUp-phone-${v}.apk"
           cp wear/build/outputs/apk/release/wear-release.apk "ScoreUp-watch-${v}.apk"
           sha256sum ScoreUp-*.apk > SHA256SUMS.txt
-          gh release create "v${v}" ScoreUp-*.apk SHA256SUMS.txt --title "ScoreUp ${v}" --notes "$(git log -1 --pretty=%B)"
+          gh release create "v${v}" ScoreUp-*.apk SHA256SUMS.txt --target "$GITHUB_SHA" --title "ScoreUp ${v}" --notes "$(git log -1 --pretty=%B)"

@@ -41,6 +41,7 @@ import androidx.lifecycle.lifecycleScope
 import com.scoreup.app.cast.CastSender
 import com.scoreup.app.install.WatchInstaller
 import com.scoreup.app.update.AppUpdater
+import com.scoreup.app.ui.common.rememberWatchHeartRate
 import com.scoreup.app.ui.history.HistoryScreen
 import com.scoreup.app.ui.scoreboard.Nav
 import com.scoreup.app.ui.scoreboard.ScoreController
@@ -81,7 +82,7 @@ class MainActivity : FragmentActivity() {
         appliedLanguage = app.settings.state.value.language
         val engine = app.runtime.engine
         val controller = ScoreController(engine, app.feedback)
-        presentation = PresentationController(this, engine.state)
+        presentation = PresentationController(this, engine.state, app.runtime.sync.heartRate)
         castSender = CastSender(applicationContext)
         installer = WatchInstaller(applicationContext)
         updater = AppUpdater(applicationContext)
@@ -121,6 +122,7 @@ class MainActivity : FragmentActivity() {
         val castTo by castSender.connectedTo.collectAsState()
         val installerState by installer.state.collectAsState()
         val syncDiag by app.runtime.sync.diagnostics.collectAsState()
+        val heartRate = rememberWatchHeartRate(app.runtime.sync.heartRate)
         var screen by rememberSaveable { mutableStateOf(Screen.BOARD) }
         var showLanguage by rememberSaveable { mutableStateOf(false) }
         val update by availableUpdate.collectAsState()
@@ -136,6 +138,8 @@ class MainActivity : FragmentActivity() {
                     WatchStatus(peers.isNotEmpty(), peers.firstOrNull()?.name),
                     tvActive = presentationDisplay != null || castTo != null,
                     watchUpdateAvailable = watchUpdate,
+                    heartRate = heartRate,
+                    onSaveScore = ::saveScore,
                 ) { nav ->
                     screen = when (nav) {
                         Nav.SETUP -> Screen.SETUP; Nav.HISTORY -> Screen.HISTORY; Nav.WATCH -> Screen.WATCH
@@ -164,7 +168,7 @@ class MainActivity : FragmentActivity() {
                     sync = syncDiag, onSyncNow = app.runtime.sync::handshake,
                 )
                 Screen.TV -> CastScreen(presentationDisplay, castSender.available, castTo, onBack = { screen = Screen.BOARD }, onOpenTvMode = { screen = Screen.TV_MODE })
-                Screen.TV_MODE -> TvScoreboard(state, Modifier.testTag("tv_mode").clickable { screen = Screen.TV })
+                Screen.TV_MODE -> TvScoreboard(state, Modifier.testTag("tv_mode").clickable { screen = Screen.TV }, heartRate = heartRate)
                 Screen.SETTINGS -> SettingsScreen(settings, onBack = { screen = Screen.BOARD }, onCheckUpdates = ::checkForUpdatesManually, onChange = app.settings::update)
             }
         }
@@ -199,6 +203,11 @@ class MainActivity : FragmentActivity() {
             confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.testTag("welcome_go")) { Text(stringResource(R.string.lets_go)) } },
             dismissButton = { TextButton(onClick = onWatch) { Text(stringResource(R.string.install_watch_cta)) } },
         )
+    }
+
+    private fun saveScore() {
+        val saved = app.saveCurrentScore()
+        android.widget.Toast.makeText(this, if (saved) R.string.score_saved else R.string.nothing_to_save, android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun checkForUpdatesManually() {

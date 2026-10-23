@@ -7,8 +7,6 @@
     <string name="pause">השהה שעון</string>
     <string name="next_period">לשלב הבא</string>
     <string name="end_set">סיים מערכה</string>
-    <string name="new_match">משחק חדש</string>
-    <string name="new_match_confirm">להתחיל משחק חדש?</string>
     <string name="points_per_tap">נקודות ללחיצה</string>
     <string name="controls">בקרה</string>
     <string name="phone_connected">הטלפון מחובר · מסונכרן</string>
@@ -19,8 +17,22 @@
     <string name="update_on_phone">יש עדכון — בטלפון פתחו ScoreUp ← ⌚ ← עדכן</string>
     <string name="made_with_love">נוצר עם ❤️ מישראל</string>
     <string name="sync_now">סנכרן עכשיו</string>
-    <string name="reset_points_confirm">לאפס את התוצאה?</string>
     <string name="game_time">זמן משחק</string>
     <string name="count_up">ספירה עולה</string>
     <string name="minutes_fmt">%1$d דק׳</string>
+    <string name="restart">התחל מחדש</string>
+    <string name="restart_confirm">לשמור את התוצאה ולהתחיל מחדש?</string>
+    <string name="save_score">שמור תוצאה</string>
+    <string name="saved">נשמר</string>
+    <string name="saved_scores">תוצאות שמורות</string>
+    <string name="no_saved_scores">אין עדיין תוצאות שמורות. התוצאה נשמרת כשמתחילים מחדש או מקישים „שמור תוצאה”.</string>
+    <string name="clear_saved">מחק הכל</string>
+    <string name="clear_saved_confirm">למחוק את כל התוצאות השמורות?</string>
+    <string name="reset_clock">אפס שעון</string>
+    <string name="heart_rate">דופק</string>
+    <string name="heart_bpm">%1$d פעימות לדקה</string>
+    <string name="heart_measuring">מודד…</string>
+    <string name="heart_allow">יש לאשר גישה לחיישנים</string>
+    <string name="heart_avg_max">ממוצע %1$d · שיא %2$d</string>
+    <string name="off">כבוי</string>
 </resources>

@@ -179,4 +179,8 @@
     <string name="sync_last_received">עדכון אחרון מהשעון: %1$s</string>
     <string name="edit_points">שינוי נקודות ללחיצה</string>
     <string name="game_time_minutes">זמן משחק (דקות · 0 = ספירה עולה)</string>
+    <string name="save_score">שמור תוצאה</string>
+    <string name="score_saved">התוצאה נשמרה בהיסטוריית המשחקים</string>
+    <string name="nothing_to_save">אין עדיין מה לשמור</string>
+    <string name="heart_rate">דופק</string>
 </resources>
