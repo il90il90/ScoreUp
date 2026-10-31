@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   unit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, wsl]
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -21,12 +21,12 @@ jobs:
       - name: Unit, Robolectric and UI tests + debug APKs
         run: ./gradlew --no-daemon --stacktrace :core:test :adb:test :shared:testDebugUnitTest :app:testDebugUnitTest :wear:testDebugUnitTest :app:assembleDebug
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && runner.environment == 'github-hosted'
         with:
           name: test-reports
           path: "**/build/reports/tests/**"
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && runner.environment == 'github-hosted'
         with:
           name: debug-apks
           path: |
@@ -34,7 +34,7 @@ jobs:
             wear/build/outputs/apk/debug/*.apk
 
   phone-emulator-e2e:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, wsl]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +44,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Enable KVM
         run: |
+          # Self-hosted WSL runner: /dev/kvm is already accessible (kvm group) and there is no sudo.
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then echo "KVM already accessible"; exit 0; fi
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
@@ -57,7 +59,7 @@ jobs:
             scripts/emulator-smoke.sh app/build/outputs/apk/release/app-release.apk com.scoreup.app/.MainActivity
 
   wear-emulator-e2e:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, wsl]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +69,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Enable KVM
         run: |
+          # Self-hosted WSL runner: /dev/kvm is already accessible (kvm group) and there is no sudo.
+          if [ -r /dev/kvm ] && [ -w /dev/kvm ]; then echo "KVM already accessible"; exit 0; fi
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2

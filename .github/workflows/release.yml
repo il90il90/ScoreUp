@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, wsl]
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4

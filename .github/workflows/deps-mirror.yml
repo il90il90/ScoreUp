@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   mirror:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, wsl]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           out="$RUNNER_TEMP/mirror/m2"
           mkdir -p "$out"
-          src="$HOME/.gradle/caches/modules-2/files-2.1"
+          src="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
           find "$src" -type f | while read -r f; do
             rel="${f#$src/}"
             group="$(echo "$rel" | cut -d/ -f1)"; art="$(echo "$rel" | cut -d/ -f2)"; ver="$(echo "$rel" | cut -d/ -f3)"; name="$(basename "$f")"
